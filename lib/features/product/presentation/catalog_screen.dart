@@ -6,6 +6,7 @@ import '../../../core/theme/huashu_theme.dart';
 import '../../../core/theme/ink_brush_divider.dart';
 import '../../../core/network/api_service.dart';
 import 'product_detail_screen.dart';
+import 'seller_panel_screen.dart';
 import '../../order/presentation/cart_state.dart';
 import '../../order/presentation/checkout_screen.dart';
 import '../../order/presentation/order_history_screen.dart';
@@ -28,10 +29,23 @@ class _CatalogScreenState extends State<CatalogScreen> {
   String? _selectedCategory;
   final List<String> _categories = ['Semua', 'Electronic', 'Minuman', 'Peralatan Rumah', 'Kecantikan'];
 
+  String _userName = '';
+  String _userRole = '';
+
   @override
   void initState() {
     super.initState();
+    _loadUserInfo();
     _fetchProducts();
+  }
+
+  Future<void> _loadUserInfo() async {
+    final name = await _api.secureStorage.read(key: 'user_name') ?? '';
+    final role = await _api.secureStorage.read(key: 'user_role') ?? '';
+    setState(() {
+      _userName = name;
+      _userRole = role;
+    });
   }
 
   Future<void> _fetchProducts() async {
@@ -129,6 +143,109 @@ class _CatalogScreenState extends State<CatalogScreen> {
     final filtered = _filteredProducts;
 
     return Scaffold(
+      drawer: Drawer(
+        backgroundColor: HuashuTheme.xuanPaperBg,
+        child: Column(
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
+              color: HuashuTheme.charcoalBlack,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const HuashuSeal(character: '書'),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _userName.toUpperCase(),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.notoSerifSc(
+                                color: HuashuTheme.xuanPaperBg,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              _userRole == 'seller' ? 'PENJUAL' : 'PEMBELI',
+                              style: GoogleFonts.notoSerifSc(
+                                color: HuashuTheme.stainedCinnabarRed,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.grid_view_outlined, color: HuashuTheme.charcoalBlack),
+              title: Text('Katalog Utama', style: GoogleFonts.notoSerifSc(fontWeight: FontWeight.bold)),
+              onTap: () => Navigator.pop(context),
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: InkBrushDivider(height: 1),
+            ),
+            ListTile(
+              leading: const Icon(Icons.history_edu_outlined, color: HuashuTheme.charcoalBlack),
+              title: Text('Riwayat Pesanan', style: GoogleFonts.notoSerifSc(fontWeight: FontWeight.bold)),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const OrderHistoryScreen()),
+                );
+              },
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: InkBrushDivider(height: 1),
+            ),
+            ListTile(
+              leading: const Icon(Icons.palette_outlined, color: HuashuTheme.stainedCinnabarRed),
+              title: Text(
+                'Panel Penjual / Admin',
+                style: GoogleFonts.notoSerifSc(
+                  fontWeight: FontWeight.bold,
+                  color: HuashuTheme.stainedCinnabarRed,
+                ),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const SellerPanelScreen()),
+                );
+              },
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: InkBrushDivider(height: 1),
+            ),
+            const Spacer(),
+            const InkBrushDivider(height: 8),
+            ListTile(
+              leading: const Icon(Icons.logout, color: HuashuTheme.stainedCinnabarRed),
+              title: Text('Keluar Akun', style: GoogleFonts.notoSerifSc(fontWeight: FontWeight.bold)),
+              onTap: () {
+                Navigator.pop(context);
+                _logout();
+              },
+            ),
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
       appBar: AppBar(
         title: Text(
           '華書 KATALOG',
@@ -290,7 +407,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                 border: Border.all(color: HuashuTheme.lightInkLine, width: HuashuTheme.hairline),
               ),
               child: CachedNetworkImage(
-                imageUrl: p['image_url']?.toString() ?? '',
+                imageUrl: ApiService.sanitizeImageUrl(p['image_url']?.toString()),
                 fit: BoxFit.cover,
                 placeholder: (_, __) => const Center(
                   child: SizedBox(
@@ -299,13 +416,32 @@ class _CatalogScreenState extends State<CatalogScreen> {
                     child: CircularProgressIndicator(strokeWidth: 1.5),
                   ),
                 ),
-                errorWidget: (_, __, ___) => Center(
-                  child: Icon(
-                    Icons.image_outlined,
-                    color: HuashuTheme.charcoalBlack.withValues(alpha: 0.15),
-                    size: 32,
-                  ),
-                ),
+                errorWidget: (_, __, ___) {
+                  final name = p['name']?.toString() ?? '墨';
+                  final initial = name.isNotEmpty ? name[0] : '墨';
+                  return Container(
+                    color: HuashuTheme.warmStone,
+                    child: Center(
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: HuashuTheme.stainedCinnabarRed.withValues(alpha: 0.6),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Text(
+                          initial,
+                          style: GoogleFonts.notoSerifSc(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: HuashuTheme.stainedCinnabarRed.withValues(alpha: 0.8),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ),

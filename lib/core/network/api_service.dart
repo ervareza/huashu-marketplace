@@ -110,6 +110,30 @@ class ApiService {
     return 0;
   }
 
+  /// Sanitasi URL gambar dari API.
+  /// Jika gambar menggunakan localhost atau 127.0.0.1, ubah host-nya ke baseUrl saat ini
+  /// agar dapat diakses dari perangkat mobile/HP secara aman menggunakan HTTPS.
+  static String sanitizeImageUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
+    
+    // Jika URL dimulai dengan localhost:5000 atau 127.0.0.1:5000, ubah ke baseUrl
+    if (url.contains('localhost:5000') || url.contains('127.0.0.1:5000')) {
+      final path = url
+          .replaceAll('http://localhost:5000', '')
+          .replaceAll('https://localhost:5000', '')
+          .replaceAll('http://127.0.0.1:5000', '')
+          .replaceAll('https://127.0.0.1:5000', '');
+      return '$baseUrl$path';
+    }
+    
+    // Pastikan HTTPS jika ngrok
+    if (url.contains('ngrok-free.app') && url.startsWith('http://')) {
+      return url.replaceFirst('http://', 'https://');
+    }
+    
+    return url;
+  }
+
   /// Safely parse price (bisa int, double, atau String "Rp 50.000")
   static double parsePrice(dynamic value) {
     if (value == null) return 0.0;

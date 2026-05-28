@@ -61,6 +61,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         if (responseData is Map<String, dynamic>) {
           final accessToken = responseData['token']?.toString();
           final refreshToken = responseData['refresh_token']?.toString();
+          final userId = responseData['id']?.toString() ?? '';
           final userName = responseData['name']?.toString() ?? '';
           final userRole = responseData['role']?.toString() ?? '';
 
@@ -70,6 +71,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           if (refreshToken != null) {
             await _api.secureStorage.write(key: 'refresh_token', value: refreshToken);
           }
+          await _api.secureStorage.write(key: 'user_id', value: userId);
           await _api.secureStorage.write(key: 'user_name', value: userName);
           await _api.secureStorage.write(key: 'user_role', value: userRole);
 

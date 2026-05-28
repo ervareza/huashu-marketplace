@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-05-28
+
+### Added
+- **Panel Penjual / Admin** (`lib/features/product/presentation/seller_panel_screen.dart`): Layar pengelolaan produk lengkap bagi penjual dengan fitur CRUD (menampilkan koleksi karya sendiri, menambah karya seni baru, memperbarui detail karya, dan menghapus karya secara permanen).
+- **Mock Image Uploader**: Memanfaatkan upload dummy byte stream 1x1 PNG menggunakan Multipart form-data sehingga API backend memproses unggahan gambar dengan sukses tanpa hambatan perizinan native file picker pada perangkat.
+- **Visual Stempel Tinta Kaligrafi**: Jika gambar produk gagal dimuat atau merupakan gambar dummy uploader, aplikasi menampilkan visual stempel cinnabar merah estetis (`HuashuSeal` berdasarkan huruf depan nama produk) sebagai bentuk visualisasi tradisional Huashu.
+- **Drawer Navigasi Utama**: Menambahkan navigasi Drawer di Katalog Utama untuk mempermudah akses ke Katalog, Riwayat Pesanan, Panel Penjual/Admin, serta keluar akun lengkap dengan stempel dan identitas profil pengguna terintegrasi.
+- **Penyimpanan ID Pengguna**: Menyimpan ID pengguna (`user_id`) secara aman di secure storage pada alur masuk (login) untuk pemrosesan filter data galeri penjual.
+
 ## [1.1.1] - 2026-05-28
 
 ### Changed

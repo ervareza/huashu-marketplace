@@ -64,17 +64,36 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   HuashuDoubleFrame(
                     height: 320,
                     child: CachedNetworkImage(
-                      imageUrl: p['image_url']?.toString() ?? '',
+                      imageUrl: ApiService.sanitizeImageUrl(p['image_url']?.toString()),
                       fit: BoxFit.cover,
                       width: double.infinity,
                       height: double.infinity,
-                      errorWidget: (_, __, ___) => const Center(
-                        child: Icon(
-                          Icons.image_outlined,
-                          color: HuashuTheme.lightInkLine,
-                          size: 48,
-                        ),
-                      ),
+                      errorWidget: (_, __, ___) {
+                        final name = p['name']?.toString() ?? '墨';
+                        final initial = name.isNotEmpty ? name[0] : '墨';
+                        return Container(
+                          color: HuashuTheme.warmStone,
+                          child: Center(
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: HuashuTheme.stainedCinnabarRed.withValues(alpha: 0.6),
+                                  width: 2.0,
+                                ),
+                              ),
+                              child: Text(
+                                initial,
+                                style: GoogleFonts.notoSerifSc(
+                                  fontSize: 36,
+                                  fontWeight: FontWeight.bold,
+                                  color: HuashuTheme.stainedCinnabarRed.withValues(alpha: 0.8),
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ),
                   const SizedBox(height: HuashuTheme.space24),
