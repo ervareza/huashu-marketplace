@@ -117,8 +117,8 @@ lib/
 ### Setup
 ```bash
 # Clone repository
-git clone <repo-url>
-cd FLUTTER-JEFRY
+git clone https://github.com/ervareza/huashu-marketplace.git
+cd huashu-marketplace
 
 # Install dependencies
 flutter pub get
