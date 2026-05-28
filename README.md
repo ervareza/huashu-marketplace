@@ -99,6 +99,9 @@ lib/
 | `POST` | `/api/auth/register` | Registrasi pengguna baru |
 | `POST` | `/api/auth/refresh-token` | Refresh JWT token |
 | `GET` | `/api/products` | Daftar semua produk |
+| `GET` | `/api/products/search` | Mencari dan memfilter produk (Server-side) |
+| `GET` | `/api/categories` | Daftar kategori dinamis |
+| `GET` | `/api/banners` | Promo banners |
 | `POST` | `/api/orders` | Buat pesanan baru |
 | `GET` | `/api/orders` | Riwayat pesanan pengguna |
 | `POST` | `/api/payments/create` | Buat transaksi Midtrans Snap |
