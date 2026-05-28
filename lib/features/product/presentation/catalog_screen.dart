@@ -6,7 +6,7 @@ import '../../../core/theme/huashu_theme.dart';
 import '../../../core/theme/ink_brush_divider.dart';
 import '../../../core/network/api_service.dart';
 import 'product_detail_screen.dart';
-import 'seller_panel_screen.dart';
+import '../../admin/presentation/admin_panel_screen.dart';
 import '../../order/presentation/cart_state.dart';
 import '../../order/presentation/checkout_screen.dart';
 import '../../order/presentation/order_history_screen.dart';
@@ -224,7 +224,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
               onTap: () {
                 Navigator.pop(context);
                 Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const SellerPanelScreen()),
+                  MaterialPageRoute(builder: (_) => const AdminPanelScreen()),
                 );
               },
             ),

@@ -181,32 +181,53 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             ),
             child: Row(
               children: [
-                // Counter
-                Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: HuashuTheme.lightInkLine,
-                      width: HuashuTheme.hairline,
+                // Counter & Total
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'TOTAL',
+                      style: GoogleFonts.inter(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.0,
+                        color: HuashuTheme.charcoalBlack.withValues(alpha: 0.6),
+                      ),
                     ),
-                  ),
-                  child: Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.remove, size: 18),
-                        onPressed: () {
-                          if (_quantity > 1) setState(() => _quantity--);
-                        },
+                    const SizedBox(height: 2),
+                    HuashuPrice(
+                      price: ApiService.formatPrice(widget.priceDouble * _quantity),
+                      fontSize: 16,
+                    ),
+                    const SizedBox(height: HuashuTheme.space8),
+                    Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: HuashuTheme.lightInkLine,
+                          width: HuashuTheme.hairline,
+                        ),
                       ),
-                      Text(
-                        _quantity.toString(),
-                        style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16),
+                      child: Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.remove, size: 18),
+                            onPressed: () {
+                              if (_quantity > 1) setState(() => _quantity--);
+                            },
+                          ),
+                          Text(
+                            _quantity.toString(),
+                            style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.add, size: 18),
+                            onPressed: () => setState(() => _quantity++),
+                          ),
+                        ],
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.add, size: 18),
-                        onPressed: () => setState(() => _quantity++),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
                 const SizedBox(width: HuashuTheme.space16),
 
@@ -215,6 +236,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: HuashuTheme.mineralJadeGreen,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
                     onPressed: _addToCart,
                     child: const Text('TAMBAH KE BAG'),

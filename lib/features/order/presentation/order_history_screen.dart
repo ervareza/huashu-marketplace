@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/huashu_theme.dart';
 import '../../../core/network/api_service.dart';
 import '../../payment/presentation/snap_webview.dart';
+import 'order_detail_screen.dart';
 
 class OrderHistoryScreen extends StatefulWidget {
   const OrderHistoryScreen({super.key});
@@ -170,14 +171,24 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                           final statusColor = _getStatusColor(paymentStatus);
                           final isUnpaid = paymentStatus == 'unpaid';
 
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: HuashuTheme.space24),
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                color: HuashuTheme.lightInkLine,
-                                width: HuashuTheme.hairline,
+                          return InkWell(
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => OrderDetailScreen(orderId: order['id']),
+                                ),
+                              ).then((_) {
+                                _fetchOrders(); // Refresh status
+                              });
+                            },
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: HuashuTheme.space24),
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: HuashuTheme.lightInkLine,
+                                  width: HuashuTheme.hairline,
+                                ),
                               ),
-                            ),
                             padding: const EdgeInsets.all(HuashuTheme.space16),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -242,7 +253,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                                 ],
                               ],
                             ),
-                          );
+                          ),
+                        );
                         },
                       ),
                     ),

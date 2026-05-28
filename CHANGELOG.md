@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-05-28
+
+### Added
+- **Order Detail Screen** (`lib/features/order/presentation/order_detail_screen.dart`): Halaman rincian pesanan dengan status pengiriman, alamat, daftar barang, status pembayaran, dan tombol bayar ulang terintegrasi dengan Snap WebView.
+- **Admin Panel Screen** (`lib/features/admin/presentation/admin_panel_screen.dart`): Dashboard utama bagi penjual/admin untuk mengakses Manajemen Produk dan Riwayat Pesanan dari satu layar elegan terpusat.
+
+### Changed
+- **Dynamic Pricing**: Bottom bar di halaman Detail Produk kini menghitung dan menampilkan total nominal secara *real-time* seiring dengan penambahan/pengurangan kuantitas.
+- **Drawer Navigasi**: Menu "Panel Penjual" di Katalog Utama kini diarahkan ke *Admin Panel Screen*.
+- **Clickable Order History**: Riwayat Pesanan kini dapat diklik pada tiap card untuk melihat rincian melalui navigasi ke *Order Detail Screen*.
+
 ## [1.2.0] - 2026-05-28
 
 ### Added
