@@ -52,6 +52,9 @@ dependencies:
 
   # Image Caching for Staggered Grid
   cached_network_image: ^3.4.1
+  image_picker: ^1.2.1
+  intl: ^0.20.2
+  socket_io_client: ^3.1.4
 
 dev_dependencies:
   flutter_test:

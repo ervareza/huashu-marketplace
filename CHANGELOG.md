@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-05-28
+
+### Added
+- **API Integration for Categories** (`lib/features/product/presentation/catalog_screen.dart`): Kategori utama kini dimuat langsung dari server melalui `GET /api/categories`.
+- **API Integration for Banners** (`lib/features/product/presentation/catalog_screen.dart`): Carousel promo banner kini memuat aset gambar dari endpoint `GET /api/banners`.
+- **Server-Side Product Search** (`lib/features/product/presentation/catalog_screen.dart`): Menggantikan filter lokal dengan query dinamis menggunakan `GET /api/products/search?q=X&category=Y` untuk penghematan bandwidth dan efisiensi memori perangkat.
+
 ## [1.3.0] - 2026-05-28
 
 ### Added

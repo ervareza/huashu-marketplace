@@ -6,9 +6,13 @@ import '../../../core/theme/huashu_theme.dart';
 import '../../../core/theme/ink_brush_divider.dart';
 import '../../../core/network/api_service.dart';
 import 'product_detail_screen.dart';
+import 'wishlist_provider.dart';
+import 'wishlist_screen.dart';
+import '../../profile/presentation/profile_screen.dart';
+import '../../notification/presentation/notification_screen.dart';
 import '../../admin/presentation/admin_panel_screen.dart';
-import '../../order/presentation/cart_state.dart';
-import '../../order/presentation/checkout_screen.dart';
+import '../../order/presentation/cart_provider.dart';
+import '../../order/presentation/cart_screen.dart';
 import '../../order/presentation/order_history_screen.dart';
 import '../../auth/presentation/login_screen.dart';
 
@@ -22,21 +26,47 @@ class CatalogScreen extends StatefulWidget {
 class _CatalogScreenState extends State<CatalogScreen> {
   final _api = ApiService();
   List<dynamic> _products = [];
+  List<dynamic> _flashSales = [];
   bool _isLoading = true;
   String? _errorMessage;
 
   String _searchQuery = '';
   String? _selectedCategory;
-  final List<String> _categories = ['Semua', 'Electronic', 'Minuman', 'Peralatan Rumah', 'Kecantikan'];
+  List<dynamic> _categories = [{'name': 'Semua'}];
+  List<dynamic> _banners = [];
 
   String _userName = '';
   String _userRole = '';
+  bool _hasUnreadNotif = false;
 
   @override
   void initState() {
     super.initState();
     _loadUserInfo();
+    _fetchFlashSales();
+    _fetchCategories();
+    _fetchBanners();
     _fetchProducts();
+    _checkUnreadNotif();
+    CartProvider().fetchCart();
+    WishlistProvider().fetchWishlist();
+  }
+
+  Future<void> _checkUnreadNotif() async {
+    try {
+      final response = await _api.dio.get('/api/notifications');
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        final notifications = response.data['data'] as List<dynamic>? ?? [];
+        final hasUnread = notifications.any((n) => n['is_read'] == false);
+        if (mounted) {
+          setState(() {
+            _hasUnreadNotif = hasUnread;
+          });
+        }
+      }
+    } catch (e) {
+      // Abaikan jika error fetch notifikasi background
+    }
   }
 
   Future<void> _loadUserInfo() async {
@@ -48,6 +78,49 @@ class _CatalogScreenState extends State<CatalogScreen> {
     });
   }
 
+  Future<void> _fetchFlashSales() async {
+    try {
+      final response = await _api.dio.get('/api/flash-sales');
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        setState(() {
+          _flashSales = response.data['data'] as List<dynamic>? ?? [];
+        });
+      }
+    } catch (e) {
+      debugPrint("Gagal memuat flash sales: $e");
+    }
+  }
+
+  Future<void> _fetchCategories() async {
+    try {
+      final response = await _api.dio.get('/api/categories');
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        if (mounted) {
+          setState(() {
+            _categories = [{'name': 'Semua'}, ...response.data['data']];
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("Gagal memuat kategori: $e");
+    }
+  }
+
+  Future<void> _fetchBanners() async {
+    try {
+      final response = await _api.dio.get('/api/banners');
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        if (mounted) {
+          setState(() {
+            _banners = response.data['data'] as List<dynamic>? ?? [];
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("Gagal memuat banner: $e");
+    }
+  }
+
   Future<void> _fetchProducts() async {
     setState(() {
       _isLoading = true;
@@ -55,7 +128,16 @@ class _CatalogScreenState extends State<CatalogScreen> {
     });
 
     try {
-      final response = await _api.dio.get('/api/products');
+      String url = '/api/products';
+      Map<String, dynamic> queryParams = {};
+      
+      if (_searchQuery.isNotEmpty || (_selectedCategory != null && _selectedCategory != 'Semua')) {
+        url = '/api/products/search';
+        if (_searchQuery.isNotEmpty) queryParams['q'] = _searchQuery;
+        if (_selectedCategory != null && _selectedCategory != 'Semua') queryParams['category'] = _selectedCategory;
+      }
+
+      final response = await _api.dio.get(url, queryParameters: queryParams);
 
       final data = response.data;
       if (data is Map<String, dynamic> &&
@@ -116,7 +198,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
 
     if (confirm == true) {
       await _api.secureStorage.deleteAll();
-      CartManager.clear();
+      CartProvider().clearLocal();
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const LoginScreen()),
@@ -127,15 +209,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
   }
 
   List<dynamic> get _filteredProducts {
-    return _products.where((p) {
-      final name = p['name']?.toString() ?? '';
-      final category = p['category']?.toString() ?? '';
-      final matchesSearch = name.toLowerCase().contains(_searchQuery.toLowerCase());
-      final matchesCategory = _selectedCategory == null ||
-          _selectedCategory == 'Semua' ||
-          category.toLowerCase() == _selectedCategory!.toLowerCase();
-      return matchesSearch && matchesCategory;
-    }).toList();
+    return _products;
   }
 
   @override
@@ -213,6 +287,20 @@ class _CatalogScreenState extends State<CatalogScreen> {
               child: InkBrushDivider(height: 1),
             ),
             ListTile(
+              leading: const Icon(Icons.person_outline, color: HuashuTheme.charcoalBlack),
+              title: Text('Profil & Alamat', style: GoogleFonts.notoSerifSc(fontWeight: FontWeight.bold)),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                );
+              },
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: InkBrushDivider(height: 1),
+            ),
+            ListTile(
               leading: const Icon(Icons.palette_outlined, color: HuashuTheme.stainedCinnabarRed),
               title: Text(
                 'Panel Penjual / Admin',
@@ -265,9 +353,52 @@ class _CatalogScreenState extends State<CatalogScreen> {
               );
             },
           ),
-          ValueListenableBuilder<List<CartItem>>(
-            valueListenable: CartManager.items,
-            builder: (context, cart, _) {
+          // ─── Notification Icon ─────────────
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.notifications_none),
+                tooltip: 'Notifikasi',
+                onPressed: () async {
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const NotificationScreen()),
+                  );
+                  _checkUnreadNotif(); // Cek lagi setelah kembali
+                },
+              ),
+              if (_hasUnreadNotif)
+                Positioned(
+                  right: 12,
+                  top: 12,
+                  child: Container(
+                    width: 10,
+                    height: 10,
+                    decoration: const BoxDecoration(
+                      color: HuashuTheme.stainedCinnabarRed,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          
+          // ─── Wishlist Icon ─────────────
+          IconButton(
+            icon: const Icon(Icons.favorite_border),
+            tooltip: 'Favorit',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const WishlistScreen()),
+              );
+            },
+          ),
+          
+          // ─── Cart Icon ─────────────
+          AnimatedBuilder(
+            animation: CartProvider(),
+            builder: (context, _) {
+              final cart = CartProvider().items;
               return Badge(
                 label: Text(cart.length.toString()),
                 isLabelVisible: cart.isNotEmpty,
@@ -275,14 +406,8 @@ class _CatalogScreenState extends State<CatalogScreen> {
                   icon: const Icon(Icons.shopping_bag_outlined),
                   tooltip: 'Keranjang',
                   onPressed: () {
-                    if (cart.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Keranjang belanja Anda masih kosong')),
-                      );
-                      return;
-                    }
                     Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const CheckoutScreen()),
+                      MaterialPageRoute(builder: (_) => const CartScreen()),
                     );
                   },
                 ),
@@ -307,10 +432,20 @@ class _CatalogScreenState extends State<CatalogScreen> {
               vertical: HuashuTheme.space12,
             ),
             child: TextField(
-              onChanged: (val) => setState(() => _searchQuery = val),
-              decoration: const InputDecoration(
+              onSubmitted: (val) {
+                setState(() => _searchQuery = val);
+                _fetchProducts();
+              },
+              decoration: InputDecoration(
                 hintText: 'Cari barang seni / produk...',
-                prefixIcon: Icon(Icons.search, color: HuashuTheme.warmStone),
+                prefixIcon: const Icon(Icons.search, color: HuashuTheme.warmStone),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.search, color: HuashuTheme.mineralJadeGreen),
+                  onPressed: () {
+                    FocusScope.of(context).unfocus();
+                    _fetchProducts();
+                  },
+                ),
               ),
             ),
           ),
@@ -323,13 +458,14 @@ class _CatalogScreenState extends State<CatalogScreen> {
               padding: const EdgeInsets.symmetric(horizontal: HuashuTheme.space24),
               itemCount: _categories.length,
               itemBuilder: (context, index) {
-                final cat = _categories[index];
-                final isSelected = _selectedCategory == cat || (_selectedCategory == null && cat == 'Semua');
+                final catMap = _categories[index];
+                final catName = catMap['name']?.toString() ?? 'Semua';
+                final isSelected = _selectedCategory == catName || (_selectedCategory == null && catName == 'Semua');
                 return Padding(
                   padding: const EdgeInsets.only(right: HuashuTheme.space12),
                   child: ChoiceChip(
                     label: Text(
-                      cat,
+                      catName,
                       style: GoogleFonts.inter(
                         fontSize: 12,
                         letterSpacing: 0.5,
@@ -337,7 +473,10 @@ class _CatalogScreenState extends State<CatalogScreen> {
                       ),
                     ),
                     selected: isSelected,
-                    onSelected: (_) => setState(() => _selectedCategory = cat),
+                    onSelected: (_) {
+                      setState(() => _selectedCategory = catName);
+                      _fetchProducts();
+                    },
                   ),
                 );
               },
@@ -348,6 +487,129 @@ class _CatalogScreenState extends State<CatalogScreen> {
             padding: EdgeInsets.symmetric(horizontal: HuashuTheme.space24),
             child: InkBrushDivider(height: 1.5),
           ),
+          const SizedBox(height: HuashuTheme.space12),
+          
+          // ─── Banners ──────────────────────────────────
+          if (_banners.isNotEmpty && (_searchQuery.isEmpty && (_selectedCategory == null || _selectedCategory == 'Semua'))) ...[
+            SizedBox(
+              height: 140,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: HuashuTheme.space24),
+                itemCount: _banners.length,
+                itemBuilder: (context, index) {
+                  final banner = _banners[index];
+                  final imageUrl = banner['image_url'] ?? '';
+                  return Container(
+                    width: 280,
+                    margin: const EdgeInsets.only(right: 16),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: HuashuTheme.lightInkLine),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: imageUrl.isNotEmpty
+                          ? CachedNetworkImage(
+                              imageUrl: imageUrl,
+                              fit: BoxFit.cover,
+                              errorWidget: (_, __, ___) => Container(color: Colors.grey[200]),
+                            )
+                          : Container(color: Colors.grey[200]),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: HuashuTheme.space12),
+          ],
+          
+          if (_flashSales.isNotEmpty && (_searchQuery.isEmpty && (_selectedCategory == null || _selectedCategory == 'Semua'))) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: HuashuTheme.space24, vertical: HuashuTheme.space12),
+              child: Row(
+                children: [
+                  const Icon(Icons.flash_on, color: HuashuTheme.stainedCinnabarRed),
+                  const SizedBox(width: 8),
+                  Text(
+                    'FLASH SALE BERAKHIR DALAM 02:45:10',
+                    style: GoogleFonts.notoSerifSc(fontWeight: FontWeight.bold, color: HuashuTheme.stainedCinnabarRed, fontSize: 14),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(
+              height: 160,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: HuashuTheme.space24),
+                itemCount: _flashSales.length,
+                itemBuilder: (context, index) {
+                  final sale = _flashSales[index];
+                  final product = sale['Product'] ?? sale;
+                  final price = ApiService.parsePrice(product['price']);
+                  final discountPrice = sale['discount_price'] != null ? ApiService.parsePrice(sale['discount_price']) : price * 0.8;
+                  
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => ProductDetailScreen(product: product, priceDouble: discountPrice)),
+                      );
+                    },
+                    child: Container(
+                      width: 120,
+                      margin: const EdgeInsets.only(right: 16),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: HuashuTheme.stainedCinnabarRed.withValues(alpha: 0.3)),
+                        color: HuashuTheme.xuanPaperBg,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: CachedNetworkImage(
+                              imageUrl: ApiService.sanitizeImageUrl(product['image_url']),
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              errorWidget: (context, url, error) => const Icon(Icons.image_not_supported),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  product['name'] ?? '',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  ApiService.formatPrice(price),
+                                  style: GoogleFonts.inter(fontSize: 10, color: Colors.grey, decoration: TextDecoration.lineThrough),
+                                ),
+                                Text(
+                                  ApiService.formatPrice(discountPrice),
+                                  style: GoogleFonts.notoSerifSc(fontSize: 12, color: HuashuTheme.stainedCinnabarRed, fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: HuashuTheme.space24, vertical: 8),
+              child: InkBrushDivider(height: 1.5),
+            ),
+          ],
 
           // ─── Grid Produk ──────────────────────────────
           Expanded(

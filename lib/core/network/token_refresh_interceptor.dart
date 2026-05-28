@@ -27,8 +27,14 @@ class TokenRefreshInterceptor extends QueuedInterceptorsWrapper {
       }
 
       try {
-        // Gunakan baseUrl dari dioClient (sudah di-set oleh ApiService)
-        final refreshResponse = await dioClient.post(
+        // Gunakan instance Dio baru tanpa interceptor ini agar tidak terjadi infinite loop
+        final refreshDio = Dio(BaseOptions(
+          baseUrl: dioClient.options.baseUrl,
+          connectTimeout: dioClient.options.connectTimeout,
+          receiveTimeout: dioClient.options.receiveTimeout,
+        ));
+        
+        final refreshResponse = await refreshDio.post(
           '/api/auth/refresh-token',
           data: {'refresh_token': refreshToken},
         );

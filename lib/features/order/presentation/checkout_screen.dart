@@ -4,8 +4,10 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/huashu_theme.dart';
 import '../../../core/theme/ink_brush_divider.dart';
 import '../../../core/network/api_service.dart';
-import 'cart_state.dart';
+import 'cart_provider.dart';
 import '../../payment/presentation/snap_webview.dart';
+import '../../profile/presentation/address_screen.dart';
+import 'voucher_screen.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
@@ -15,77 +17,158 @@ class CheckoutScreen extends StatefulWidget {
 }
 
 class _CheckoutScreenState extends State<CheckoutScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _addressController = TextEditingController();
-  final _cityController = TextEditingController();
+  final ApiService _api = ApiService();
+  bool _isProcessing = false;
+  bool _isLoadingData = true;
+  
+  List<dynamic> _addresses = [];
+  Map<String, dynamic>? _selectedAddress;
+
   final _notesController = TextEditingController();
 
-  final _api = ApiService();
-  bool _isProcessing = false;
+  List<dynamic> _shippingRates = [];
+  Map<String, dynamic>? _selectedRate;
+  bool _isCalculatingShipping = false;
+
+  String? _appliedVoucherCode;
+  double _discountAmount = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchAddresses();
+  }
+
+  Future<void> _fetchAddresses() async {
+    setState(() => _isLoadingData = true);
+    try {
+      final response = await _api.dio.get('/api/users/addresses');
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        final List<dynamic> list = response.data['data'] ?? [];
+        setState(() {
+          _addresses = list;
+          if (list.isNotEmpty) {
+            _selectedAddress = list.firstWhere((a) => a['is_default'] == true, orElse: () => list.first);
+            _calculateShipping();
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint("Gagal fetch addresses: $e");
+    } finally {
+      if (mounted) setState(() => _isLoadingData = false);
+    }
+  }
+
+  Future<void> _calculateShipping() async {
+    if (_selectedAddress == null) return;
+    
+    setState(() => _isCalculatingShipping = true);
+    try {
+      final response = await _api.dio.post('/api/shipping/calculate', data: {
+        'destination': _selectedAddress!['city'],
+        'weight': 1.0, // Asumsi 1 kg
+      });
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        final rates = response.data['data']['rates'] ?? [];
+        setState(() {
+          _shippingRates = rates;
+          if (rates.isNotEmpty) {
+            _selectedRate = rates.first;
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint("Gagal hitung ongkir: $e");
+    } finally {
+      if (mounted) setState(() => _isCalculatingShipping = false);
+    }
+  }
+
+  Future<void> _applyVoucher(String code) async {
+    final subtotal = CartProvider().totalAmount.toInt();
+    try {
+      final response = await _api.dio.post('/api/orders/apply-voucher', data: {
+        'code': code,
+        'total_amount': subtotal,
+      });
+
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        final data = response.data['data'];
+        setState(() {
+          _appliedVoucherCode = code;
+          _discountAmount = (data['discount'] as num).toDouble();
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Voucher berhasil digunakan!'), backgroundColor: HuashuTheme.mineralJadeGreen));
+        }
+      } else {
+        if (mounted) _showError(response.data['message']?.toString() ?? 'Voucher tidak valid');
+      }
+    } catch (e) {
+      if (mounted) _showError('Gagal menggunakan voucher');
+    }
+  }
 
   Future<void> _processCheckout() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (_selectedAddress == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pilih alamat pengiriman terlebih dahulu')));
+      return;
+    }
+
+    if (_selectedRate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pilih kurir pengiriman terlebih dahulu')));
+      return;
+    }
 
     setState(() => _isProcessing = true);
 
     try {
-      final List<Map<String, dynamic>> itemsPayload = CartManager.items.value.map((item) {
+      final List<Map<String, dynamic>> itemsPayload = CartProvider().items.map((item) {
         return {
-          'product_id': item.id,
+          'product_id': item.productId,
           'quantity': item.quantity,
           'price': item.price.toInt(),
         };
       }).toList();
 
+      final subtotal = CartProvider().totalAmount.toInt();
+      final shippingCost = (_selectedRate!['cost'] as num).toInt();
+      final totalAmount = subtotal + shippingCost - _discountAmount.toInt();
+
+      final payload = {
+        'total_amount': totalAmount > 0 ? totalAmount : 0,
+        'shipping_address': _selectedAddress,
+        'notes': _notesController.text.trim(),
+        'items': itemsPayload,
+      };
+
+      if (_appliedVoucherCode != null) {
+        payload['voucher_code'] = _appliedVoucherCode;
+        payload['discount_amount'] = _discountAmount.toInt();
+      }
+
       final orderResponse = await _api.dio.post(
         '/api/orders',
-        data: {
-          'total_amount': CartManager.totalAmount.toInt(),
-          'shipping_address': {
-            'nama_penerima': _nameController.text.trim(),
-            'nomor_hp': _phoneController.text.trim(),
-            'jalan': _addressController.text.trim(),
-            'kota': _cityController.text.trim(),
-            'provinsi': 'Indonesia',
-            'kode_pos': '12345',
-          },
-          'notes': _notesController.text.trim(),
-          'items': itemsPayload,
-        },
+        data: payload,
       );
 
       final orderData = orderResponse.data;
-      if (orderData is! Map<String, dynamic> ||
-          orderResponse.statusCode != 201 ||
-          orderData['success'] != true) {
-        final msg = (orderData is Map<String, dynamic>)
-            ? orderData['message']?.toString() ?? 'Gagal membuat pesanan.'
-            : 'Response order tidak valid dari server.';
-        _showError(msg);
+      if (orderData is! Map<String, dynamic> || orderResponse.statusCode != 201 || orderData['success'] != true) {
+        _showError(orderData is Map ? orderData['message'] : 'Gagal membuat pesanan');
         return;
       }
 
       final orderId = orderData['data']?['id'];
-      if (orderId == null) {
-        _showError('Order ID tidak ditemukan dalam response.');
-        return;
-      }
-
-      final paymentResponse = await _api.dio.post(
-        '/api/payments/create',
-        data: {'order_id': orderId},
-      );
+      final paymentResponse = await _api.dio.post('/api/payments/create', data: {'order_id': orderId});
 
       final paymentData = paymentResponse.data;
-      if (paymentData is Map<String, dynamic> &&
-          paymentResponse.statusCode == 200 &&
-          paymentData['success'] == true) {
+      if (paymentData is Map<String, dynamic> && paymentResponse.statusCode == 200 && paymentData['success'] == true) {
         final redirectUrl = paymentData['data']?['redirect_url']?.toString();
 
         if (redirectUrl != null && mounted) {
-          CartManager.clear();
+          CartProvider().clearLocal();
+          CartProvider().fetchCart();
 
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
@@ -97,191 +180,267 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           );
           return;
         }
-
-        _showError('URL pembayaran tidak ditemukan.');
-      } else {
-        final msg = (paymentData is Map<String, dynamic>)
-            ? paymentData['message']?.toString() ?? 'Gagal membuat transaksi pembayaran.'
-            : 'Response pembayaran tidak valid.';
-        _showError(msg);
       }
+      _showError('Gagal memproses pembayaran.');
     } on DioException catch (e) {
-      _showError(ApiService.extractErrorMessage(
-        e,
-        fallback: 'Proses checkout gagal. Harap coba lagi.',
-      ));
-    } catch (e) {
-      _showError('Kesalahan tak terduga: ${e.toString()}');
+      _showError(ApiService.extractErrorMessage(e));
     } finally {
-      if (mounted) {
-        setState(() => _isProcessing = false);
-      }
+      if (mounted) setState(() => _isProcessing = false);
     }
   }
 
   void _showError(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: HuashuTheme.stainedCinnabarRed,
-      ),
+      SnackBar(content: Text(message), backgroundColor: HuashuTheme.stainedCinnabarRed),
     );
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _phoneController.dispose();
-    _addressController.dispose();
-    _cityController.dispose();
-    _notesController.dispose();
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('CHECKOUT')),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(HuashuTheme.space24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      appBar: AppBar(
+        title: Text('Checkout', style: GoogleFonts.notoSerifSc(fontWeight: FontWeight.w600)),
+        centerTitle: true,
+      ),
+      body: _isLoadingData
+          ? const Center(child: CircularProgressIndicator(color: HuashuTheme.mineralJadeGreen))
+          : Column(
               children: [
-                // ─── Alamat Pengiriman ─────────────────────
-                Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: HuashuTheme.lightInkLine,
-                      width: HuashuTheme.hairline,
-                    ),
-                  ),
-                  padding: const EdgeInsets.all(HuashuTheme.space16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.all(HuashuTheme.space24),
                     children: [
-                      const HuashuSectionLabel(text: 'Alamat Pengiriman'),
-                      const SizedBox(height: HuashuTheme.space16),
-                      TextFormField(
-                        controller: _nameController,
-                        decoration: const InputDecoration(labelText: 'Nama Penerima'),
-                        validator: (v) => v == null || v.trim().isEmpty ? 'Nama penerima wajib diisi' : null,
+                      // ─── Alamat Pengiriman ────────────────────────────
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const HuashuSectionLabel(text: 'Alamat Pengiriman'),
+                          TextButton(
+                            onPressed: () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => const AddressScreen()),
+                              );
+                              _fetchAddresses();
+                            },
+                            child: const Text('Ubah / Tambah', style: TextStyle(color: HuashuTheme.mineralJadeGreen)),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: HuashuTheme.space16),
-                      TextFormField(
-                        controller: _phoneController,
-                        keyboardType: TextInputType.phone,
-                        decoration: const InputDecoration(labelText: 'Nomor Handphone'),
-                        validator: (v) => v == null || v.trim().isEmpty ? 'Nomor handphone wajib diisi' : null,
+                      const SizedBox(height: HuashuTheme.space12),
+                      
+                      if (_addresses.isEmpty)
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: HuashuTheme.stainedCinnabarRed),
+                            borderRadius: BorderRadius.circular(8),
+                            color: HuashuTheme.stainedCinnabarRed.withValues(alpha: 0.1),
+                          ),
+                          child: Text(
+                            'Anda belum memiliki alamat pengiriman. Silakan tambah alamat terlebih dahulu.',
+                            style: GoogleFonts.inter(color: HuashuTheme.stainedCinnabarRed),
+                          ),
+                        )
+                      else if (_selectedAddress != null)
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: HuashuTheme.lightInkLine),
+                            borderRadius: BorderRadius.circular(8),
+                            color: HuashuTheme.xuanPaperBg,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${_selectedAddress!['recipient']} (${_selectedAddress!['label']})',
+                                style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(_selectedAddress!['phone'], style: GoogleFonts.inter(fontSize: 13)),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${_selectedAddress!['address']}, ${_selectedAddress!['city']}, ${_selectedAddress!['province']} ${_selectedAddress!['postal_code']}',
+                                style: GoogleFonts.inter(fontSize: 13),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                      const SizedBox(height: HuashuTheme.space24),
+                      const InkBrushDivider(height: 1),
+                      const SizedBox(height: HuashuTheme.space24),
+
+                      // ─── Pengiriman ────────────────────────────
+                      const HuashuSectionLabel(text: 'Metode Pengiriman'),
+                      const SizedBox(height: HuashuTheme.space12),
+                      
+                      if (_isCalculatingShipping)
+                        const Center(child: Padding(padding: EdgeInsets.all(16.0), child: CircularProgressIndicator(color: HuashuTheme.mineralJadeGreen)))
+                      else if (_shippingRates.isNotEmpty)
+                        Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(color: HuashuTheme.lightInkLine),
+                            borderRadius: BorderRadius.circular(8),
+                            color: HuashuTheme.xuanPaperBg,
+                          ),
+                          child: Column(
+                            children: _shippingRates.map((rate) {
+                              return RadioListTile<Map<String, dynamic>>(
+                                value: rate,
+                                groupValue: _selectedRate,
+                                title: Text('${rate['courier']} - ${rate['service']}', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+                                subtitle: Text('${rate['description']} (Estimasi: ${rate['etd']})', style: GoogleFonts.inter(fontSize: 12)),
+                                secondary: Text(ApiService.formatPrice((rate['cost'] as num).toDouble()), style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: HuashuTheme.mineralJadeGreen)),
+                                activeColor: HuashuTheme.mineralJadeGreen,
+                                onChanged: (value) {
+                                  setState(() => _selectedRate = value);
+                                },
+                              );
+                            }).toList(),
+                          ),
+                        )
+                      else
+                        Text('Pilih alamat untuk melihat opsi pengiriman.', style: GoogleFonts.inter(color: Colors.grey)),
+
+                      const SizedBox(height: HuashuTheme.space24),
+                      const InkBrushDivider(height: 1),
+                      const SizedBox(height: HuashuTheme.space24),
+
+                      // ─── Pesanan ────────────────────────────
+                      const HuashuSectionLabel(text: 'Pesanan'),
+                      const SizedBox(height: HuashuTheme.space12),
+                      Column(
+                        children: CartProvider().items.map((item) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    '${item.name} (x${item.quantity})',
+                                    style: GoogleFonts.inter(),
+                                  ),
+                                ),
+                                HuashuPrice(price: ApiService.formatPrice(item.price * item.quantity)),
+                              ],
+                            ),
+                          );
+                        }).toList(),
                       ),
-                      const SizedBox(height: HuashuTheme.space16),
-                      TextFormField(
-                        controller: _addressController,
-                        decoration: const InputDecoration(labelText: 'Jalan & Nomor Rumah'),
-                        validator: (v) => v == null || v.trim().isEmpty ? 'Alamat wajib diisi' : null,
+                      
+                      const SizedBox(height: HuashuTheme.space24),
+                      TextField(
+                        controller: _notesController,
+                        decoration: InputDecoration(
+                          labelText: 'Catatan (Opsional)',
+                          hintText: 'Misal: Titip di pos satpam',
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                          enabledBorder: OutlineInputBorder(borderSide: const BorderSide(color: HuashuTheme.lightInkLine), borderRadius: BorderRadius.circular(8)),
+                          focusedBorder: OutlineInputBorder(borderSide: const BorderSide(color: HuashuTheme.mineralJadeGreen), borderRadius: BorderRadius.circular(8)),
+                        ),
+                        maxLines: 2,
                       ),
-                      const SizedBox(height: HuashuTheme.space16),
-                      TextFormField(
-                        controller: _cityController,
-                        decoration: const InputDecoration(labelText: 'Kota'),
-                        validator: (v) => v == null || v.trim().isEmpty ? 'Kota wajib diisi' : null,
+                      const SizedBox(height: HuashuTheme.space24),
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(Icons.local_activity_outlined, color: HuashuTheme.stainedCinnabarRed),
+                        title: Text('Gunakan Voucher', style: GoogleFonts.notoSerifSc(fontWeight: FontWeight.bold)),
+                        subtitle: Text(_appliedVoucherCode != null ? 'Voucher $_appliedVoucherCode terpasang' : 'Pilih atau masukkan kode voucher'),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (_appliedVoucherCode != null)
+                              Text('-${ApiService.formatPrice(_discountAmount)}', style: GoogleFonts.inter(color: HuashuTheme.stainedCinnabarRed, fontWeight: FontWeight.bold)),
+                            const Icon(Icons.chevron_right),
+                          ],
+                        ),
+                        onTap: () async {
+                          final code = await Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const VoucherScreen(isSelectionMode: true)),
+                          );
+                          if (code != null && code is String) {
+                            _applyVoucher(code);
+                          }
+                        },
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: HuashuTheme.space24),
-
-                // ─── Catatan ──────────────────────────────
-                TextFormField(
-                  controller: _notesController,
-                  decoration: const InputDecoration(
-                    labelText: 'Catatan Pengiriman (Opsional)',
-                    hintText: 'Tolong dibungkus bubble wrap...',
+                
+                // ─── Bottom Bar ───────────────────────────
+                Container(
+                  padding: const EdgeInsets.all(HuashuTheme.space24),
+                  decoration: BoxDecoration(
+                    color: HuashuTheme.xuanPaperBg,
+                    border: const Border(top: BorderSide(color: HuashuTheme.lightInkLine)),
+                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -4))],
                   ),
-                ),
-                const SizedBox(height: HuashuTheme.space32),
-
-                // ─── Ringkasan ────────────────────────────
-                const HuashuSectionLabel(text: 'Rincian Belanjaan'),
-                const SizedBox(height: HuashuTheme.space12),
-                ValueListenableBuilder<List<CartItem>>(
-                  valueListenable: CartManager.items,
-                  builder: (context, cart, _) {
-                    return ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: cart.length,
-                      itemBuilder: (context, idx) {
-                        final item = cart[idx];
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: HuashuTheme.space8),
-                          child: Row(
+                  child: SafeArea(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('Subtotal', style: GoogleFonts.inter(color: Colors.grey)),
+                            Text(ApiService.formatPrice(CartProvider().totalAmount), style: GoogleFonts.inter()),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('Ongkos Kirim', style: GoogleFonts.inter(color: Colors.grey)),
+                            Text(ApiService.formatPrice((_selectedRate?['cost'] as num?)?.toDouble() ?? 0), style: GoogleFonts.inter()),
+                          ],
+                        ),
+                        if (_discountAmount > 0) ...[
+                          const SizedBox(height: 8),
+                          Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Expanded(
-                                child: Text(
-                                  '${item.name} (x${item.quantity})',
-                                  style: GoogleFonts.inter(color: HuashuTheme.charcoalBlack),
-                                ),
-                              ),
-                              HuashuPrice(
-                                price: ApiService.formatPrice(item.price * item.quantity),
-                              ),
+                              Text('Diskon Voucher', style: GoogleFonts.inter(color: HuashuTheme.stainedCinnabarRed)),
+                              Text('-${ApiService.formatPrice(_discountAmount)}', style: GoogleFonts.inter(color: HuashuTheme.stainedCinnabarRed)),
                             ],
                           ),
-                        );
-                      },
-                    );
-                  },
-                ),
-                const SizedBox(height: HuashuTheme.space16),
-                const InkBrushDivider(height: 1.5),
-                const SizedBox(height: HuashuTheme.space16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'TOTAL',
-                      style: GoogleFonts.inter(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        letterSpacing: 1.0,
-                      ),
+                        ],
+                        const SizedBox(height: 12),
+                        const InkBrushDivider(height: 1),
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('TOTAL PEMBAYARAN', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 12)),
+                            HuashuPrice(price: ApiService.formatPrice((CartProvider().totalAmount + ((_selectedRate?['cost'] as num?)?.toDouble() ?? 0) - _discountAmount).clamp(0, double.infinity)), fontSize: 18),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: HuashuTheme.mineralJadeGreen,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                            ),
+                            onPressed: _isProcessing || _addresses.isEmpty || _selectedRate == null ? null : _processCheckout,
+                            child: _isProcessing
+                                ? const SizedBox(
+                                    width: 24, height: 24,
+                                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                  )
+                                : const Text('BUAT PESANAN & BAYAR'),
+                          ),
+                        ),
+                      ],
                     ),
-                    HuashuPrice(
-                      price: ApiService.formatPrice(CartManager.totalAmount),
-                      fontSize: 20,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: HuashuTheme.space48),
-
-                // ─── Tombol ───────────────────────────────
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: HuashuTheme.mineralJadeGreen,
-                    ),
-                    onPressed: _isProcessing ? null : _processCheckout,
-                    child: _isProcessing
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('KONFIRMASI & BAYAR'),
                   ),
-                ),
+                )
               ],
             ),
-          ),
-        ),
-      ),
     );
   }
 }

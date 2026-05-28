@@ -1,5 +1,8 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/theme/huashu_theme.dart';
@@ -135,9 +138,147 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       case 'failed':
       case 'cancelled':
       case 'expired':
+      case 'disputed':
         return HuashuTheme.stainedCinnabarRed;
       default:
         return HuashuTheme.charcoalBlack;
+    }
+  }
+
+  void _showDisputeDialog() {
+    final reasonCtrl = TextEditingController();
+    final descCtrl = TextEditingController();
+    XFile? evidenceImage;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: HuashuTheme.xuanPaperBg,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(ctx).viewInsets.bottom,
+                left: 24,
+                right: 24,
+                top: 24,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Ajukan Komplain', style: GoogleFonts.notoSerifSc(fontSize: 20, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: reasonCtrl,
+                      decoration: const InputDecoration(labelText: 'Alasan Utama (Contoh: Barang Rusak)', border: OutlineInputBorder()),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: descCtrl,
+                      decoration: const InputDecoration(labelText: 'Deskripsi Detail', border: OutlineInputBorder()),
+                      maxLines: 3,
+                    ),
+                    const SizedBox(height: 16),
+                    InkWell(
+                      onTap: () async {
+                        final picker = ImagePicker();
+                        final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+                        if (pickedFile != null) {
+                          setModalState(() {
+                            evidenceImage = pickedFile;
+                          });
+                        }
+                      },
+                      child: Container(
+                        height: 100,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: HuashuTheme.lightInkLine),
+                          borderRadius: BorderRadius.circular(8),
+                          color: HuashuTheme.xuanPaperBg,
+                        ),
+                        child: evidenceImage != null
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: kIsWeb
+                                    ? Image.network(evidenceImage!.path, fit: BoxFit.cover)
+                                    : Image.file(File(evidenceImage!.path), fit: BoxFit.cover),
+                              )
+                            : Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.add_photo_alternate_outlined, size: 30, color: Colors.grey),
+                                  const SizedBox(height: 8),
+                                  Text('Tambah Foto Bukti (Opsional)', style: GoogleFonts.inter(fontSize: 12, color: Colors.grey)),
+                                ],
+                              ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: HuashuTheme.stainedCinnabarRed,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        onPressed: () async {
+                          if (reasonCtrl.text.isEmpty || evidenceImage == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Alasan dan Foto Bukti wajib diisi')));
+                            return;
+                          }
+                          Navigator.pop(ctx);
+                          _submitDispute(reasonCtrl.text, descCtrl.text, evidenceImage!);
+                        },
+                        child: const Text('KIRIM KOMPLAIN'),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _submitDispute(String reason, String description, XFile imageFile) async {
+    setState(() => _isLoading = true);
+    try {
+      String fileName = imageFile.name;
+      FormData formData = FormData.fromMap({
+        'reason': reason,
+        'description': description,
+        'evidence': MultipartFile.fromBytes(
+          await imageFile.readAsBytes(),
+          filename: fileName,
+        ),
+      });
+
+      final response = await _api.dio.post('/api/orders/${widget.orderId}/dispute', data: formData);
+
+      if (response.statusCode == 201) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Komplain berhasil diajukan.')));
+          _fetchOrderDetail();
+        }
+      }
+    } on DioException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ApiService.extractErrorMessage(e))));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal mengajukan komplain: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -174,7 +315,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   Widget _buildOrderDetail() {
     final paymentStatus = _order!['payment_status']?.toString() ?? 'unknown';
     final orderStatus = _order!['status']?.toString() ?? 'unknown';
-    final isUnpaid = paymentStatus == 'unpaid' || paymentStatus == 'pending';
+    final isUnpaid = paymentStatus == 'unpaid';
 
     final shippingAddress = _order!['shipping_address'];
     final items = _order!['order_items'] as List<dynamic>? ?? [];
@@ -365,6 +506,24 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               ),
             ],
           ),
+          const SizedBox(height: HuashuTheme.space24),
+
+          // Tombol Ajukan Komplain (hanya jika pesanan tidak cancelled/failed/disputed)
+          if (orderStatus != 'cancelled' && orderStatus != 'failed' && orderStatus != 'disputed')
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: HuashuTheme.stainedCinnabarRed,
+                  side: const BorderSide(color: HuashuTheme.stainedCinnabarRed),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+                icon: const Icon(Icons.warning_amber_rounded),
+                label: const Text('AJUKAN KOMPLAIN'),
+                onPressed: _showDisputeDialog,
+              ),
+            ),
+
           const SizedBox(height: HuashuTheme.space48),
         ],
       ),

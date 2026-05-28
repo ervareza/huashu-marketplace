@@ -169,7 +169,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                           final order = _orders[index];
                           final paymentStatus = order['payment_status']?.toString() ?? 'unknown';
                           final statusColor = _getStatusColor(paymentStatus);
-                          final isUnpaid = paymentStatus == 'unpaid' || paymentStatus == 'pending';
+                          final isUnpaid = paymentStatus == 'unpaid';
 
                           return InkWell(
                             onTap: () {
