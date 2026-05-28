@@ -4,7 +4,7 @@
 
 ## 1. Pemetaan Kontrak API (API Interface Contracts)
 
-*   **Base URL**: `https://d04a-2404-c0-b301-8af6-a587-34e-b9b3-3cba.ngrok-free.app`
+*   **Base URL**: `https://96a3-2404-c0-b301-8af6-a587-34e-b9b3-3cba.ngrok-free.app`
 *   **Format Response Global**:
     ```json
     {
@@ -112,7 +112,7 @@
           "price": "Rp 150.000",
           "stock": 45,
           "category": "Minuman",
-          "image_url": "https://d04a-2404-c0-b301-8af6-a587-34e-b9b3-3cba.ngrok-free.app/public/products/image-1716700800.png",
+          "image_url": "https://96a3-2404-c0-b301-8af6-a587-34e-b9b3-3cba.ngrok-free.app/public/products/image-1716700800.png",
           "seller_id": 2,
           "is_active": true
         }
@@ -148,7 +148,7 @@
         "price": "Rp 250.000",
         "stock": 15,
         "category": "Peralatan Rumah",
-        "image_url": "https://d04a-2404-c0-b301-8af6-a587-34e-b9b3-3cba.ngrok-free.app/public/products/image-xuan.png"
+        "image_url": "https://96a3-2404-c0-b301-8af6-a587-34e-b9b3-3cba.ngrok-free.app/public/products/image-xuan.png"
       }
     }
     ```

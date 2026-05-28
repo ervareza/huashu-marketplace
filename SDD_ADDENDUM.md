@@ -181,7 +181,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 class TokenRefreshInterceptor extends QueuedInterceptorsWrapper {
   final Dio dioClient;
   final _secureStorage = const FlutterSecureStorage();
-  final String _authBaseUrl = 'https://d04a-2404-c0-b301-8af6-a587-34e-b9b3-3cba.ngrok-free.app';
+  final String _authBaseUrl = 'https://96a3-2404-c0-b301-8af6-a587-34e-b9b3-3cba.ngrok-free.app';
 
   TokenRefreshInterceptor({required this.dioClient});
 

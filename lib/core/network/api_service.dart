@@ -12,7 +12,7 @@ class ApiService {
   // GANTI URL INI JIKA TEMAN ANDA RESTART NGROK
   // ═══════════════════════════════════════════════════
   static const String baseUrl =
-      'https://d04a-2404-c0-b301-8af6-a587-34e-b9b3-3cba.ngrok-free.app';
+      'https://96a3-2404-c0-b301-8af6-a587-34e-b9b3-3cba.ngrok-free.app';
 
   static final ApiService _instance = ApiService._internal();
   factory ApiService() => _instance;
