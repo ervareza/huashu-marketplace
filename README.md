@@ -3,169 +3,172 @@
 > Marketplace seni tradisional dengan estetika tinta — *"Keheningan yang berbicara"*
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter" alt="Flutter"/>
-  <img src="https://img.shields.io/badge/Dart-3.x-0175C2?logo=dart" alt="Dart"/>
-  <img src="https://img.shields.io/badge/Midtrans-Payment-FF6600" alt="Midtrans"/>
-  <img src="https://img.shields.io/badge/License-Private-red" alt="License"/>
+  <a href="https://flutter.dev"><img src="https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter" alt="Flutter"/></a>
+  <a href="https://dart.dev"><img src="https://img.shields.io/badge/Dart-3.x-0175C2?logo=dart" alt="Dart"/></a>
+  <a href="https://midtrans.com"><img src="https://img.shields.io/badge/Midtrans-Payment-FF6600" alt="Midtrans"/></a>
+  <a href="https://socket.io/"><img src="https://img.shields.io/badge/Socket.IO-Realtime-010101?logo=socket.io" alt="Socket.IO"/></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License"/></a>
 </p>
 
 ---
 
-## ✨ Tentang Proyek
+## 📖 Tentang Proyek
 
-**Huashu Marketplace** adalah aplikasi mobile marketplace minimalis yang menggunakan bahasa visual **Huashu Design System** — terinspirasi dari estetika tinta tradisional Tiongkok. Aplikasi ini dibangun dengan Flutter dan terhubung ke backend REST API dengan integrasi pembayaran Midtrans Snap.
+**Huashu Marketplace** adalah aplikasi *mobile commerce* revolusioner yang dirancang khusus untuk memperdagangkan karya seni tradisional, barang antik, dan kerajinan tangan. Aplikasi ini membuang gaya *modern-generic* yang membosankan dan menggantinya dengan bahasa visual **Huashu Design System** — terinspirasi dari estetika tinta tradisional Tiongkok, kertas *Xuan*, dan stempel *Cinnabar*.
 
-### Filosofi Desain
-- **Anti-Slop**: Tanpa rounded corner berlebihan, tanpa drop-shadow AI, tanpa gradien plastik
-- **0px Border Radius**: Semua elemen menggunakan sudut tajam — terinspirasi stempel dan bingkai kaligrafi
-- **Tipografi sebagai Ornamen**: Kombinasi Noto Serif SC (judul) + Inter (body)
-- **Palet Mineral**: Kertas Xuan, Arang Tinta, Giok Mineral, Sinabar Usang
+Aplikasi ini dibangun menggunakan **Flutter** untuk antarmuka lintas platform (Android/iOS) dan terhubung ke backend REST API berbasis **Node.js**. Selain itu, aplikasi ini dilengkapi fitur premium seperti *Real-time Chat* menggunakan Socket.IO, dan gerbang pembayaran *seamless* menggunakan **Midtrans Snap**.
 
 ---
 
-## 📱 Screenshots
+## ✨ Fitur Utama
 
-| Login | Katalog | Detail Produk | Checkout |
-|:-----:|:-------:|:-------------:|:--------:|
-| Stempel 華 | Grid produk | Bingkai ganda | Rincian belanja |
+### 🛍️ Untuk Pembeli
+- **Katalog & Pencarian Cerdas**: Pencarian server-side (`/api/products/search`) dan filter Kategori dinamis.
+- **Promo Banners & Flash Sales**: Komidi putar (carousel) *banner* interaktif dan hitung mundur Flash Sale secara *real-time*.
+- **Keranjang & Wishlist**: Manajemen keranjang belanja dan fitur *Wishlist* dengan integrasi state provider terpusat.
+- **Sistem Voucher**: Klaim kode promo dan terapkan saat *Checkout* untuk mendapatkan diskon langsung.
+- **Real-time Chat (Socket.IO)**: Mengobrol langsung dengan penjual layaknya aplikasi *chatting* sungguhan.
+- **Pembayaran Aman (Midtrans)**: Beli produk melalui WebView Snap Midtrans (Virtual Account, GoPay, Kartu Kredit).
+- **Notifikasi & Riwayat Pesanan**: Lacak pesanan secara komprehensif dari "Diproses", "Dikirim", hingga "Selesai".
+- **Resolusi Sengketa (Disputes)**: Ajukan komplain jika pesanan tidak sesuai, dilengkapi *upload* bukti keluhan.
 
----
-
-## 🏗️ Arsitektur
-
-```
-lib/
-├── core/
-│   ├── network/
-│   │   ├── api_service.dart          # Dio singleton + safe error parsing
-│   │   └── token_refresh_interceptor.dart  # JWT auto-refresh
-│   └── theme/
-│       ├── huashu_theme.dart         # Design system lengkap + widgets
-│       └── ink_brush_divider.dart    # Custom painter kuas kaligrafi
-├── features/
-│   ├── auth/
-│   │   └── presentation/
-│   │       ├── login_screen.dart     # Halaman masuk
-│   │       └── register_screen.dart  # Halaman daftar
-│   ├── product/
-│   │   └── presentation/
-│   │       ├── catalog_screen.dart   # Grid katalog + filter + search
-│   │       └── product_detail_screen.dart
-│   ├── order/
-│   │   └── presentation/
-│   │       ├── cart_state.dart       # State management keranjang
-│   │       ├── checkout_screen.dart  # Form alamat + ringkasan
-│   │       └── order_history_screen.dart
-│   └── payment/
-│       └── presentation/
-│           └── snap_webview.dart     # WebView Midtrans Snap
-└── main.dart
-```
+### 🏪 Untuk Penjual / Admin
+- **Panel Dashboard Eksklusif**: Pantau seluruh pesanan, pendapatan, dan katalog dari satu layar yang elegan.
+- **Manajemen Pesanan (Order Management)**: Ubah status pesanan (Kirim Resi Pengiriman) secara langsung dari aplikasi.
+- **Manajemen Produk (CRUD)**: Unggah produk baru, kelola stok, dan hapus katalog usang dengan mudah (*mock uploader* terintegrasi).
 
 ---
 
 ## 🎨 Huashu Design System
 
-### Token Warna
-| Token | Hex | Kegunaan |
-|-------|-----|----------|
-| `xuanPaperBg` | `#F7F5F0` | Background utama (kertas Xuan) |
-| `charcoalBlack` | `#1E1E1E` | Teks utama & tombol primer |
-| `mineralJadeGreen` | `#2D5A43` | Aksi positif, CTA sekunder |
-| `stainedCinnabarRed` | `#B83A2C` | Harga, error, stempel |
-| `lightInkLine` | `#E2DFD5` | Border, divider, placeholder |
-| `warmStone` | `#D4CFC4` | Elemen sekunder |
-| `agedGold` | `#8B7D3C` | Aksen premium |
+Kami mengimplementasikan UI/UX yang sangat ketat (*Anti-Slop*).
 
-### Komponen Dekoratif
-| Widget | Fungsi |
-|--------|--------|
-| `HuashuSeal` | Stempel merah tradisional (karakter Hanzi) |
-| `HuashuDoubleFrame` | Bingkai ganda untuk gambar produk |
-| `HuashuStatusBox` | Kotak pesan error/success/info |
-| `HuashuStampBadge` | Badge status pesanan |
-| `HuashuSectionLabel` | Label section UPPERCASE |
-| `HuashuPrice` | Harga dengan font serif sinabar |
-| `HuashuEmptyState` | State kosong dengan ikon + retry |
-| `InkBrushDivider` | Garis pembatas sapuan kuas kaligrafi |
+- **Anti-Slop**: Tanpa *rounded corner* berlebihan, tanpa gradien plastik, tanpa bayangan *drop-shadow* *AI-generated*.
+- **0px Border Radius**: Semua elemen desain menggunakan sudut tajam — terinspirasi bingkai kayu kaligrafi kuno.
+- **Tipografi sebagai Ornamen**: Kombinasi **Noto Serif SC** (untuk judul/harga) dan **Inter** (untuk deskripsi/body).
+- **Palet Mineral Tradisional**:
+
+| Token Warna | Hex Code | Visualisasi Kegunaan |
+|-------------|----------|-----------------------|
+| `xuanPaperBg` | `#F7F5F0` | Latar belakang utama (Kertas Xuan) |
+| `charcoalBlack` | `#1E1E1E` | Teks utama, *AppBar*, tombol primer (Tinta Arang) |
+| `mineralJadeGreen` | `#2D5A43` | Aksi positif, tombol 'Beli', status sukses (Giok Mineral) |
+| `stainedCinnabarRed` | `#B83A2C` | Harga diskon, *error*, tombol batal, *Seal/Stamp* (Sinabar Usang) |
+| `lightInkLine` | `#E2DFD5` | Border input, *divider*, placeholder gambar |
+| `warmStone` | `#D4CFC4` | Elemen UI sekunder, teks *hint* |
+| `agedGold` | `#8B7D3C` | Aksen keanggotaan/Premium (Emas Tua) |
 
 ---
 
-## 🔌 API Endpoints
+## 🚀 Instalasi & Persiapan
 
-| Method | Endpoint | Kegunaan |
-|--------|----------|----------|
-| `POST` | `/api/auth/login` | Login pengguna |
-| `POST` | `/api/auth/register` | Registrasi pengguna baru |
-| `POST` | `/api/auth/refresh-token` | Refresh JWT token |
-| `GET` | `/api/products` | Daftar semua produk |
-| `GET` | `/api/products/search` | Mencari dan memfilter produk (Server-side) |
-| `GET` | `/api/categories` | Daftar kategori dinamis |
-| `GET` | `/api/banners` | Promo banners |
-| `POST` | `/api/orders` | Buat pesanan baru |
-| `GET` | `/api/orders` | Riwayat pesanan pengguna |
-| `POST` | `/api/payments/create` | Buat transaksi Midtrans Snap |
+### Prasyarat (*Prerequisites*)
+Pastikan lingkungan *development* Anda sudah terinstal:
+- [Flutter SDK](https://flutter.dev/docs/get-started/install) (versi 3.x ke atas)
+- [Dart SDK](https://dart.dev/get-dart)
+- Android Studio / VS Code dengan ekstensi Flutter
+- (Khusus Android) **Android NDK 26.3.11579264** atau versi di atasnya.
 
-> **Catatan**: Base URL API dikonfigurasi di satu tempat: `lib/core/network/api_service.dart`
+### Langkah Instalasi
+
+1. **Clone Repositori**
+   ```bash
+   git clone https://github.com/ervareza/huashu-marketplace.git
+   cd huashu-marketplace
+   ```
+
+2. **Unduh Dependencies**
+   ```bash
+   flutter pub get
+   ```
+
+3. **Konfigurasi Lingkungan (API URL)**
+   Ubah *Base URL* server backend Anda di `lib/core/network/api_service.dart`:
+   ```dart
+   final String baseUrl = 'http://IP_SERVER_ANDA:5000'; 
+   // Gunakan 10.0.2.2 untuk Android Emulator yang mengarah ke localhost
+   ```
+
+4. **Jalankan Aplikasi**
+   ```bash
+   flutter run
+   ```
+
+5. **Build APK Release**
+   ```bash
+   flutter build apk --release
+   ```
+   *File APK siap install akan berada di:* `build/app/outputs/flutter-apk/app-release.apk`
 
 ---
 
-## 🚀 Cara Menjalankan
+## 🔌 Dokumentasi API (*Endpoints*)
 
-### Prasyarat
-- Flutter SDK 3.x
-- Android SDK
-- NDK 26.3.11579264
+Aplikasi menggunakan pola JWT (JSON Web Token) dengan *Auto-Refresh Interceptor*.
 
-### Setup
-```bash
-# Clone repository
-git clone https://github.com/ervareza/huashu-marketplace.git
-cd huashu-marketplace
+| Fitur | Method | Endpoint | Kegunaan |
+|---|---|---|---|
+| **Auth** | `POST` | `/api/auth/login` | Autentikasi Pengguna |
+| | `POST` | `/api/auth/register` | Registrasi Akun Baru |
+| | `POST` | `/api/auth/refresh-token` | Memperbarui JWT Access Token |
+| **Profil** | `PUT` | `/api/users/profile` | Update info & Avatar Profil |
+| **Katalog** | `GET` | `/api/products` | Muat daftar semua produk |
+| | `GET` | `/api/products/search` | Mencari & memfilter produk (Server-side) |
+| | `GET` | `/api/categories` | Mendapatkan daftar kategori dinamis |
+| | `GET` | `/api/banners` | Menampilkan Promo Banners |
+| | `GET` | `/api/flash-sales` | Menampilkan event Flash Sale saat ini |
+| **Keranjang** | `GET/POST` | `/api/cart` | Manajemen Keranjang & Checkout |
+| **Pesanan** | `POST` | `/api/orders` | Membuat pesanan baru |
+| | `GET` | `/api/orders` | Melihat Riwayat Pesanan Pribadi |
+| | `POST` | `/api/orders/apply-voucher`| Menggunakan Voucher Belanja |
+| **Admin** | `PUT` | `/api/orders/:id/status`| Mengubah status order (Kirim Resi) |
+| **Payment**| `POST` | `/api/payments/create` | Inisiasi transaksi Midtrans Snap WebView |
+| **Chat** | `GET` | `/api/chats` | Melihat daftar ruang percakapan |
 
-# Install dependencies
-flutter pub get
+---
 
-# Ganti base URL API (jika perlu)
-# Edit file: lib/core/network/api_service.dart
-# Ubah variabel `baseUrl`
+## 🏗️ Struktur Proyek
 
-# Jalankan di device
-flutter run
+Proyek ini dibangun dengan mengedepankan modul *Feature-Based Architecture*:
 
-# Build APK release
-flutter build apk --release
+```text
+lib/
+├── core/
+│   ├── network/       # Dio singleton, Interceptors, HTTP Client
+│   └── theme/         # Huashu Design System, Kustomisasi Komponen (Seal, InkDivider)
+├── features/
+│   ├── admin/         # Layar khusus penjual/admin (Panel, Order Detail)
+│   ├── auth/          # Layar login & register
+│   ├── chat/          # Real-time chat list & room (REST + Socket.io)
+│   ├── notification/  # Riwayat notifikasi
+│   ├── order/         # Checkout, riwayat, lacak resi, Snap Midtrans, Cart, Voucher
+│   ├── product/       # Katalog, detail barang, pencarian, flash sale, Wishlist
+│   └── profile/       # Edit profil (nama, foto) dan manajemen alamat pengiriman
+└── main.dart          # Entry point aplikasi & Provider registrations
 ```
 
-### APK Release
-File APK siap install tersedia di:
-```
-releases/app-release.apk
-```
+---
+
+## 🤝 Pedoman Kontribusi (Contributing)
+
+Kami sangat menghargai kontribusi dari komunitas! Baik itu pelaporan *bug*, penambahan fitur, maupun perbaikan dokumentasi.
+
+1. **Fork** repositori ini.
+2. Buat cabang fitur Anda (`git checkout -b feature/FiturKerenAnda`).
+3. Lakukan komit perubahan Anda sesuai standar [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) (`git commit -m 'feat: menambahkan fitur keren'`).
+4. **Push** ke cabang Anda (`git push origin feature/FiturKerenAnda`).
+5. Buka sebuah **Pull Request** ke *branch* `main`.
+
+> Harap pastikan kode Anda selalu lulus pemeriksaan linter (`flutter analyze`) sebelum membuat *Pull Request*.
 
 ---
 
-## 📦 Dependencies
+## 📜 Lisensi
 
-| Package | Kegunaan |
-|---------|----------|
-| `dio` | HTTP client dengan interceptor |
-| `flutter_secure_storage` | Penyimpanan token JWT terenkripsi |
-| `google_fonts` | Noto Serif SC + Inter |
-| `cached_network_image` | Cache gambar produk |
-| `webview_flutter` | WebView Midtrans Snap |
+Proyek ini dilisensikan di bawah **MIT License**.
+Lihat file [LICENSE](LICENSE) untuk detail lebih lanjut.
 
----
-
-## 📝 Changelog
-
-Lihat [CHANGELOG.md](CHANGELOG.md) untuk riwayat perubahan lengkap.
-
----
-
-## 👥 Tim
-
-Dikembangkan sebagai proyek marketplace minimalis dengan pendekatan desain tradisional.
+Sederhananya: Anda **bebas** untuk menggunakan, menyalin, memodifikasi, menggabungkan, menerbitkan, mendistribusikan, mensublisensikan, dan/atau menjual salinan perangkat lunak ini asalkan mencantumkan atribusi hak cipta dan pemberitahuan lisensi asli.
 
 ---
 
