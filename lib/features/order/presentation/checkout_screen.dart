@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/huashu_theme.dart';
 import '../../../core/theme/ink_brush_divider.dart';
+import '../../../core/network/api_service.dart';
 import 'cart_state.dart';
 import '../../payment/presentation/snap_webview.dart';
 
@@ -22,12 +22,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final _cityController = TextEditingController();
   final _notesController = TextEditingController();
 
-  final _dio = Dio();
-  final _secureStorage = const FlutterSecureStorage();
+  final _api = ApiService();
   bool _isProcessing = false;
-
-  final String _ordersUrl = 'https://d04a-2404-c0-b301-8af6-a587-34e-b9b3-3cba.ngrok-free.app/api/orders';
-  final String _paymentsUrl = 'https://d04a-2404-c0-b301-8af6-a587-34e-b9b3-3cba.ngrok-free.app/api/payments/create';
 
   Future<void> _processCheckout() async {
     if (!_formKey.currentState!.validate()) return;
@@ -35,10 +31,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     setState(() => _isProcessing = true);
 
     try {
-      final token = await _secureStorage.read(key: 'access_token');
-      final headers = {'Authorization': 'Bearer $token'};
-
-      // 1. Susun payload item belanja
       final List<Map<String, dynamic>> itemsPayload = CartManager.items.value.map((item) {
         return {
           'product_id': item.id,
@@ -47,10 +39,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         };
       }).toList();
 
-      // 2. Buat Order Baru
-      final orderResponse = await _dio.post(
-        _ordersUrl,
-        options: Options(headers: headers),
+      final orderResponse = await _api.dio.post(
+        '/api/orders',
         data: {
           'total_amount': CartManager.totalAmount.toInt(),
           'shipping_address': {
@@ -66,49 +56,77 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         },
       );
 
-      if (orderResponse.statusCode == 201 && orderResponse.data['success'] == true) {
-        final orderId = orderResponse.data['data']['id'];
+      final orderData = orderResponse.data;
+      if (orderData is! Map<String, dynamic> ||
+          orderResponse.statusCode != 201 ||
+          orderData['success'] != true) {
+        final msg = (orderData is Map<String, dynamic>)
+            ? orderData['message']?.toString() ?? 'Gagal membuat pesanan.'
+            : 'Response order tidak valid dari server.';
+        _showError(msg);
+        return;
+      }
 
-        // 3. Buat Transaksi Pembayaran Midtrans Snap
-        final paymentResponse = await _dio.post(
-          _paymentsUrl,
-          options: Options(headers: headers),
-          data: {'order_id': orderId},
-        );
+      final orderId = orderData['data']?['id'];
+      if (orderId == null) {
+        _showError('Order ID tidak ditemukan dalam response.');
+        return;
+      }
 
-        if (paymentResponse.statusCode == 200 && paymentResponse.data['success'] == true) {
-          final redirectUrl = paymentResponse.data['data']['redirect_url'];
+      final paymentResponse = await _api.dio.post(
+        '/api/payments/create',
+        data: {'order_id': orderId},
+      );
 
-          if (mounted) {
-            // Bersihkan keranjang sebelum masuk ke WebView
-            CartManager.clear();
-            
-            // 4. Buka WebView Snap Pembayaran
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
-                builder: (_) => SnapWebView(
-                  redirectUrl: redirectUrl,
-                  orderId: orderId,
-                ),
+      final paymentData = paymentResponse.data;
+      if (paymentData is Map<String, dynamic> &&
+          paymentResponse.statusCode == 200 &&
+          paymentData['success'] == true) {
+        final redirectUrl = paymentData['data']?['redirect_url']?.toString();
+
+        if (redirectUrl != null && mounted) {
+          CartManager.clear();
+
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => SnapWebView(
+                redirectUrl: redirectUrl,
+                orderId: orderId,
               ),
-            );
-          }
+            ),
+          );
+          return;
         }
+
+        _showError('URL pembayaran tidak ditemukan.');
+      } else {
+        final msg = (paymentData is Map<String, dynamic>)
+            ? paymentData['message']?.toString() ?? 'Gagal membuat transaksi pembayaran.'
+            : 'Response pembayaran tidak valid.';
+        _showError(msg);
       }
     } on DioException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.response?.data['message'] ?? 'Proses checkout gagal. Harap coba lagi.'),
-            backgroundColor: HuashuTheme.stainedCinnabarRed,
-          ),
-        );
-      }
+      _showError(ApiService.extractErrorMessage(
+        e,
+        fallback: 'Proses checkout gagal. Harap coba lagi.',
+      ));
+    } catch (e) {
+      _showError('Kesalahan tak terduga: ${e.toString()}');
     } finally {
       if (mounted) {
         setState(() => _isProcessing = false);
       }
     }
+  }
+
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: HuashuTheme.stainedCinnabarRed,
+      ),
+    );
   }
 
   @override
@@ -124,65 +142,60 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('CHECKOUT'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: HuashuTheme.charcoalBlack,
-      ),
+      appBar: AppBar(title: const Text('CHECKOUT')),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.all(HuashuTheme.space24),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Ilustrasi Amplop Pengiriman (Gaya Surat Klasik)
+                // ─── Alamat Pengiriman ─────────────────────
                 Container(
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    border: Border.all(color: HuashuTheme.lightInkLine, width: 0.5),
+                    border: Border.all(
+                      color: HuashuTheme.lightInkLine,
+                      width: HuashuTheme.hairline,
+                    ),
                   ),
-                  padding: const EdgeInsets.all(16.0),
+                  padding: const EdgeInsets.all(HuashuTheme.space16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'ALAMAT PENGIRIMAN (SURAT)',
-                        style: Theme.of(context).textTheme.labelSmall,
-                      ),
-                      const SizedBox(height: 16),
+                      const HuashuSectionLabel(text: 'Alamat Pengiriman'),
+                      const SizedBox(height: HuashuTheme.space16),
                       TextFormField(
                         controller: _nameController,
                         decoration: const InputDecoration(labelText: 'Nama Penerima'),
                         validator: (v) => v == null || v.trim().isEmpty ? 'Nama penerima wajib diisi' : null,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: HuashuTheme.space16),
                       TextFormField(
                         controller: _phoneController,
                         keyboardType: TextInputType.phone,
                         decoration: const InputDecoration(labelText: 'Nomor Handphone'),
                         validator: (v) => v == null || v.trim().isEmpty ? 'Nomor handphone wajib diisi' : null,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: HuashuTheme.space16),
                       TextFormField(
                         controller: _addressController,
                         decoration: const InputDecoration(labelText: 'Jalan & Nomor Rumah'),
-                        validator: (v) => v == null || v.trim().isEmpty ? 'Alamat pengiriman wajib diisi' : null,
+                        validator: (v) => v == null || v.trim().isEmpty ? 'Alamat wajib diisi' : null,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: HuashuTheme.space16),
                       TextFormField(
                         controller: _cityController,
-                        decoration: const InputDecoration(labelText: 'Kota Penerima'),
+                        decoration: const InputDecoration(labelText: 'Kota'),
                         validator: (v) => v == null || v.trim().isEmpty ? 'Kota wajib diisi' : null,
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
-                
-                // Catatan Pesanan
+                const SizedBox(height: HuashuTheme.space24),
+
+                // ─── Catatan ──────────────────────────────
                 TextFormField(
                   controller: _notesController,
                   decoration: const InputDecoration(
@@ -190,19 +203,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     hintText: 'Tolong dibungkus bubble wrap...',
                   ),
                 ),
-                const SizedBox(height: 32),
-                
-                // Ringkasan Belanja (Grid Box)
-                Text(
-                  'RINCIAN BELANJAAN',
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.0,
-                    color: HuashuTheme.charcoalBlack.withOpacity(0.6),
-                  ),
-                ),
-                const SizedBox(height: 12),
+                const SizedBox(height: HuashuTheme.space32),
+
+                // ─── Ringkasan ────────────────────────────
+                const HuashuSectionLabel(text: 'Rincian Belanjaan'),
+                const SizedBox(height: HuashuTheme.space12),
                 ValueListenableBuilder<List<CartItem>>(
                   valueListenable: CartManager.items,
                   builder: (context, cart, _) {
@@ -213,7 +218,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       itemBuilder: (context, idx) {
                         final item = cart[idx];
                         return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8.0),
+                          padding: const EdgeInsets.symmetric(vertical: HuashuTheme.space8),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -223,12 +228,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                   style: GoogleFonts.inter(color: HuashuTheme.charcoalBlack),
                                 ),
                               ),
-                              Text(
-                                'Rp ${(item.price * item.quantity).toInt()}',
-                                style: GoogleFonts.notoSerifSc(
-                                  fontWeight: FontWeight.bold,
-                                  color: HuashuTheme.charcoalBlack,
-                                ),
+                              HuashuPrice(
+                                price: ApiService.formatPrice(item.price * item.quantity),
                               ),
                             ],
                           ),
@@ -237,29 +238,29 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     );
                   },
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: HuashuTheme.space16),
                 const InkBrushDivider(height: 1.5),
-                const SizedBox(height: 16),
+                const SizedBox(height: HuashuTheme.space16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'TOTAL PEMBAYARAN',
-                      style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14),
-                    ),
-                    Text(
-                      'Rp ${CartManager.totalAmount.toInt()}',
-                      style: GoogleFonts.notoSerifSc(
+                      'TOTAL',
+                      style: GoogleFonts.inter(
                         fontWeight: FontWeight.bold,
-                        fontSize: 20,
-                        color: HuashuTheme.stainedCinnabarRed,
+                        fontSize: 14,
+                        letterSpacing: 1.0,
                       ),
+                    ),
+                    HuashuPrice(
+                      price: ApiService.formatPrice(CartManager.totalAmount),
+                      fontSize: 20,
                     ),
                   ],
                 ),
-                const SizedBox(height: 48),
-                
-                // Tombol Eksekusi Checkout
+                const SizedBox(height: HuashuTheme.space48),
+
+                // ─── Tombol ───────────────────────────────
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -271,10 +272,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         ? const SizedBox(
                             width: 20,
                             height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: HuashuTheme.xuanPaperBg,
-                            ),
+                            child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Text('KONFIRMASI & BAYAR'),
                   ),

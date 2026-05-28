@@ -4,7 +4,6 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 class TokenRefreshInterceptor extends QueuedInterceptorsWrapper {
   final Dio dioClient;
   final _secureStorage = const FlutterSecureStorage();
-  final String _authBaseUrl = 'https://d04a-2404-c0-b301-8af6-a587-34e-b9b3-3cba.ngrok-free.app';
 
   TokenRefreshInterceptor({required this.dioClient});
 
@@ -14,6 +13,8 @@ class TokenRefreshInterceptor extends QueuedInterceptorsWrapper {
     if (token != null) {
       options.headers['Authorization'] = 'Bearer $token';
     }
+    // Pastikan header ngrok selalu ada
+    options.headers['ngrok-skip-browser-warning'] = 'true';
     return handler.next(options);
   }
 
@@ -26,34 +27,43 @@ class TokenRefreshInterceptor extends QueuedInterceptorsWrapper {
       }
 
       try {
+        // Gunakan baseUrl dari dioClient (sudah di-set oleh ApiService)
         final refreshResponse = await dioClient.post(
-          '$_authBaseUrl/api/auth/refresh-token',
+          '/api/auth/refresh-token',
           data: {'refresh_token': refreshToken},
         );
 
         if (refreshResponse.statusCode == 200) {
-          final newAccessToken = refreshResponse.data['data']['token'];
-          
-          await _secureStorage.write(key: 'access_token', value: newAccessToken);
+          final data = refreshResponse.data;
+          // Safe parsing: data bisa Map atau bukan
+          if (data is Map<String, dynamic>) {
+            final newAccessToken = data['data']?['token'];
+            if (newAccessToken != null) {
+              await _secureStorage.write(key: 'access_token', value: newAccessToken.toString());
 
-          final options = err.requestOptions;
-          options.headers['Authorization'] = 'Bearer $newAccessToken';
+              final options = err.requestOptions;
+              options.headers['Authorization'] = 'Bearer $newAccessToken';
 
-          final cloneRequest = await dioClient.request(
-            options.path,
-            options: Options(
-              method: options.method,
-              headers: options.headers,
-            ),
-            data: options.data,
-            queryParameters: options.queryParameters,
-          );
+              final cloneRequest = await dioClient.request(
+                options.path,
+                options: Options(
+                  method: options.method,
+                  headers: options.headers,
+                ),
+                data: options.data,
+                queryParameters: options.queryParameters,
+              );
 
-          return handler.resolve(cloneRequest);
+              return handler.resolve(cloneRequest);
+            }
+          }
         }
       } catch (refreshError) {
+        // Refresh gagal — hapus semua token
         await _secureStorage.delete(key: 'access_token');
         await _secureStorage.delete(key: 'refresh_token');
+        await _secureStorage.delete(key: 'user_name');
+        await _secureStorage.delete(key: 'user_role');
       }
     }
     return handler.next(err);

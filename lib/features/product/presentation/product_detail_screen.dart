@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/theme/huashu_theme.dart';
 import '../../../core/theme/ink_brush_divider.dart';
+import '../../../core/network/api_service.dart';
 import '../../order/presentation/cart_state.dart';
 
 class ProductDetailScreen extends StatefulWidget {
@@ -25,10 +26,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   void _addToCart() {
     final cartItem = CartItem(
       id: widget.product['id'],
-      name: widget.product['name'],
-      description: widget.product['description'] ?? '',
+      name: widget.product['name']?.toString() ?? 'Produk',
+      description: widget.product['description']?.toString() ?? '',
       price: widget.priceDouble,
-      imageUrl: widget.product['image_url'] ?? '',
+      imageUrl: widget.product['image_url']?.toString() ?? '',
       quantity: _quantity,
     );
 
@@ -36,9 +37,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('${widget.product['name']} berhasil ditambahkan ke keranjang'),
+        content: Text('${widget.product['name']} ditambahkan ke keranjang'),
         backgroundColor: HuashuTheme.mineralJadeGreen,
-        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -48,36 +48,28 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final p = widget.product;
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: HuashuTheme.charcoalBlack,
-      ),
+      appBar: AppBar(),
       body: Column(
         children: [
-          // Gambar Atas Scrollable Detail
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: HuashuTheme.space24,
+                vertical: HuashuTheme.space12,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Bingkai Ganda Gambar Utama (Huashu Framing)
-                  Container(
-                    width: double.infinity,
-                    height: 300,
-                    decoration: BoxDecoration(
-                      border: Border.all(color: HuashuTheme.lightInkLine, width: 0.5),
-                    ),
-                    padding: const EdgeInsets.all(4.0),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(color: HuashuTheme.lightInkLine, width: 0.5),
-                      ),
-                      child: CachedNetworkImage(
-                        imageUrl: p['image_url'] ?? '',
-                        fit: BoxFit.cover,
-                        errorWidget: (context, url, error) => const Icon(
+                  // ─── Gambar dengan Bingkai Ganda ────────────
+                  HuashuDoubleFrame(
+                    height: 320,
+                    child: CachedNetworkImage(
+                      imageUrl: p['image_url']?.toString() ?? '',
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
+                      errorWidget: (_, __, ___) => const Center(
+                        child: Icon(
                           Icons.image_outlined,
                           color: HuashuTheme.lightInkLine,
                           size: 48,
@@ -85,77 +77,62 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  
-                  // Label Kategori
+                  const SizedBox(height: HuashuTheme.space24),
+
+                  // ─── Label Kategori ─────────────────────────
+                  HuashuSectionLabel(text: p['category']?.toString() ?? ''),
+                  const SizedBox(height: HuashuTheme.space8),
+
+                  // ─── Nama Produk ────────────────────────────
                   Text(
-                    p['category'].toString().toUpperCase(),
-                    style: Theme.of(context).textTheme.labelSmall,
-                  ),
-                  const SizedBox(height: 8),
-                  
-                  // Nama Produk (Serif Klasik)
-                  Text(
-                    p['name'],
+                    p['name']?.toString() ?? '',
                     style: Theme.of(context).textTheme.headlineMedium,
                   ),
-                  const SizedBox(height: 12),
-                  
-                  // Harga Produk (Sinabar Merah)
-                  Text(
-                    p['price'] ?? 'Rp 0',
-                    style: GoogleFonts.notoSerifSc(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: HuashuTheme.stainedCinnabarRed,
-                    ),
+                  const SizedBox(height: HuashuTheme.space12),
+
+                  // ─── Harga ──────────────────────────────────
+                  HuashuPrice(
+                    price: ApiService.formatPrice(widget.priceDouble),
+                    fontSize: 24,
                   ),
-                  const SizedBox(height: 20),
-                  
-                  // Pembatas Kuas Kaligrafi
+                  const SizedBox(height: HuashuTheme.space24),
+
+                  // ─── Pembatas Kuas ──────────────────────────
                   const InkBrushDivider(height: 2.0),
-                  const SizedBox(height: 20),
-                  
-                  // Deskripsi
+                  const SizedBox(height: HuashuTheme.space24),
+
+                  // ─── Deskripsi ──────────────────────────────
+                  const HuashuSectionLabel(text: 'Deskripsi Barang'),
+                  const SizedBox(height: HuashuTheme.space12),
                   Text(
-                    'DESKRIPSI BARANG',
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      letterSpacing: 1.0,
-                      fontWeight: FontWeight.bold,
-                      color: HuashuTheme.charcoalBlack.withOpacity(0.6),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    p['description'] ?? 'Tidak ada deskripsi untuk barang seni ini.',
+                    p['description']?.toString() ?? 'Tidak ada deskripsi untuk barang seni ini.',
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
-                  const SizedBox(height: 24),
-                  
-                  // Detail Toko / Penjual (Seller)
-                  if (p['seller'] != null) ...[
+                  const SizedBox(height: HuashuTheme.space24),
+
+                  // ─── Info Penjual ───────────────────────────
+                  if (p['seller'] != null && p['seller'] is Map) ...[
                     Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(HuashuTheme.space16),
                       decoration: BoxDecoration(
-                        border: Border.all(color: HuashuTheme.lightInkLine, width: 0.5),
+                        border: Border.all(
+                          color: HuashuTheme.lightInkLine,
+                          width: HuashuTheme.hairline,
+                        ),
                       ),
                       child: Row(
                         children: [
                           const Icon(Icons.storefront_outlined, color: HuashuTheme.mineralJadeGreen),
-                          const SizedBox(width: 16),
+                          const SizedBox(width: HuashuTheme.space16),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              const HuashuSectionLabel(text: 'Penjual Utama'),
+                              const SizedBox(height: HuashuTheme.space4),
                               Text(
-                                'PENJUAL UTAMA',
-                                style: Theme.of(context).textTheme.labelSmall,
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                p['seller']['name'] ?? 'Toko Seni',
+                                p['seller']['name']?.toString() ?? 'Toko Seni',
                                 style: GoogleFonts.inter(
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w600,
                                   color: HuashuTheme.charcoalBlack,
                                 ),
                               ),
@@ -164,37 +141,41 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: HuashuTheme.space32),
                   ],
                 ],
               ),
             ),
           ),
-          
-          // Panel Jumlah Beli & Beli Sekarang (Sticky Bottom Bar)
+
+          // ─── Bottom Bar ─────────────────────────────────
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            padding: const EdgeInsets.symmetric(
+              horizontal: HuashuTheme.space24,
+              vertical: HuashuTheme.space16,
+            ),
             decoration: const BoxDecoration(
               border: Border(
-                top: BorderSide(color: HuashuTheme.lightInkLine, width: 0.5),
+                top: BorderSide(color: HuashuTheme.lightInkLine, width: HuashuTheme.hairline),
               ),
               color: HuashuTheme.xuanPaperBg,
             ),
             child: Row(
               children: [
-                // Counter Jumlah Kustom (Huashu Underline Style)
+                // Counter
                 Container(
                   decoration: BoxDecoration(
-                    border: Border.all(color: HuashuTheme.lightInkLine, width: 0.5),
+                    border: Border.all(
+                      color: HuashuTheme.lightInkLine,
+                      width: HuashuTheme.hairline,
+                    ),
                   ),
                   child: Row(
                     children: [
                       IconButton(
                         icon: const Icon(Icons.remove, size: 18),
                         onPressed: () {
-                          if (_quantity > 1) {
-                            setState(() => _quantity--);
-                          }
+                          if (_quantity > 1) setState(() => _quantity--);
                         },
                       ),
                       Text(
@@ -203,16 +184,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                       IconButton(
                         icon: const Icon(Icons.add, size: 18),
-                        onPressed: () {
-                          setState(() => _quantity++);
-                        },
+                        onPressed: () => setState(() => _quantity++),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 16),
-                
-                // Tombol Beli Utama (Mineral Jade Green)
+                const SizedBox(width: HuashuTheme.space16),
+
+                // Tombol Beli
                 Expanded(
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(

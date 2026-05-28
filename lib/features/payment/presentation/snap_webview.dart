@@ -6,7 +6,7 @@ import '../../product/presentation/catalog_screen.dart';
 
 class SnapWebView extends StatefulWidget {
   final String redirectUrl;
-  final int orderId;
+  final dynamic orderId; // Handle int/String dari API
 
   const SnapWebView({
     super.key,
@@ -81,7 +81,7 @@ class _SnapWebViewState extends State<SnapWebView> {
 
 class TransactionResultScreen extends StatelessWidget {
   final String status;
-  final int orderId;
+  final dynamic orderId;
 
   const TransactionResultScreen({
     super.key,
@@ -135,7 +135,7 @@ class TransactionResultScreen extends StatelessWidget {
                 child: Icon(icon, color: themeColor, size: 36),
               ),
               const SizedBox(height: 48),
-              
+
               // Judul Puitis
               Text(
                 title,
@@ -147,21 +147,21 @@ class TransactionResultScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 24),
-              
+
               // Detail Order ID
               Text(
                 'KODE TRANSAKSI: #$orderId',
                 style: Theme.of(context).textTheme.labelSmall,
               ),
               const SizedBox(height: 16),
-              
+
               // Deskripsi Pesan
               Text(
                 message,
                 style: Theme.of(context).textTheme.bodyLarge,
               ),
               const Spacer(),
-              
+
               // Tombol Kembali
               SizedBox(
                 width: double.infinity,
@@ -170,8 +170,9 @@ class TransactionResultScreen extends StatelessWidget {
                     backgroundColor: themeColor,
                   ),
                   onPressed: () {
-                    Navigator.of(context).pushReplacement(
+                    Navigator.of(context).pushAndRemoveUntil(
                       MaterialPageRoute(builder: (_) => const CatalogScreen()),
+                      (route) => false,
                     );
                   },
                   child: const Text('KEMBALI KE BERANDA'),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class CartItem {
-  final int id;
+  final dynamic id; // API bisa kirim int atau String
   final String name;
   final String description;
   final double price;
@@ -16,6 +16,11 @@ class CartItem {
     required this.imageUrl,
     this.quantity = 1,
   });
+
+  /// Bandingkan ID secara aman (handle int vs String)
+  bool matchesId(dynamic otherId) {
+    return id.toString() == otherId.toString();
+  }
 }
 
 class CartManager {
@@ -23,7 +28,7 @@ class CartManager {
 
   static void add(CartItem newItem) {
     final list = List<CartItem>.from(items.value);
-    final index = list.indexWhere((item) => item.id == newItem.id);
+    final index = list.indexWhere((item) => item.matchesId(newItem.id));
 
     if (index >= 0) {
       list[index].quantity += newItem.quantity;
@@ -33,9 +38,9 @@ class CartManager {
     items.value = list;
   }
 
-  static void remove(int id) {
+  static void remove(dynamic id) {
     final list = List<CartItem>.from(items.value);
-    list.removeWhere((item) => item.id == id);
+    list.removeWhere((item) => item.matchesId(id));
     items.value = list;
   }
 

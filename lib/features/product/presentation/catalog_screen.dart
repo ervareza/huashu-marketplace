@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/theme/huashu_theme.dart';
 import '../../../core/theme/ink_brush_divider.dart';
+import '../../../core/network/api_service.dart';
 import 'product_detail_screen.dart';
 import '../../order/presentation/cart_state.dart';
 import '../../order/presentation/checkout_screen.dart';
 import '../../order/presentation/order_history_screen.dart';
+import '../../auth/presentation/login_screen.dart';
 
 class CatalogScreen extends StatefulWidget {
   const CatalogScreen({super.key});
@@ -18,8 +19,7 @@ class CatalogScreen extends StatefulWidget {
 }
 
 class _CatalogScreenState extends State<CatalogScreen> {
-  final _dio = Dio();
-  final _secureStorage = const FlutterSecureStorage();
+  final _api = ApiService();
   List<dynamic> _products = [];
   bool _isLoading = true;
   String? _errorMessage;
@@ -27,8 +27,6 @@ class _CatalogScreenState extends State<CatalogScreen> {
   String _searchQuery = '';
   String? _selectedCategory;
   final List<String> _categories = ['Semua', 'Electronic', 'Minuman', 'Peralatan Rumah', 'Kecantikan'];
-
-  final String _productsUrl = 'https://d04a-2404-c0-b301-8af6-a587-34e-b9b3-3cba.ngrok-free.app/api/products';
 
   @override
   void initState() {
@@ -43,26 +41,33 @@ class _CatalogScreenState extends State<CatalogScreen> {
     });
 
     try {
-      final token = await _secureStorage.read(key: 'access_token');
-      final response = await _dio.get(
-        _productsUrl,
-        options: Options(
-          headers: {'Authorization': 'Bearer $token'},
-        ),
-      );
+      final response = await _api.dio.get('/api/products');
 
-      if (response.statusCode == 200 && response.data['success'] == true) {
+      final data = response.data;
+      if (data is Map<String, dynamic> &&
+          response.statusCode == 200 &&
+          data['success'] == true) {
+        final productsData = data['data'];
         setState(() {
-          _products = response.data['data'];
+          _products = (productsData is List) ? productsData : [];
         });
       } else {
         setState(() {
-          _errorMessage = response.data['message'] ?? 'Gagal mengambil produk';
+          _errorMessage = (data is Map<String, dynamic>)
+              ? data['message']?.toString() ?? 'Gagal mengambil produk'
+              : 'Format response produk tidak valid.';
         });
       }
     } on DioException catch (e) {
       setState(() {
-        _errorMessage = e.response?.data['message'] ?? 'Gagal memuat produk dari server.';
+        _errorMessage = ApiService.extractErrorMessage(
+          e,
+          fallback: 'Gagal memuat produk dari server.',
+        );
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Kesalahan tak terduga: ${e.toString()}';
       });
     } finally {
       if (mounted) {
@@ -73,21 +78,50 @@ class _CatalogScreenState extends State<CatalogScreen> {
     }
   }
 
-  List<dynamic> get _filteredProducts {
-    return _products.where((p) {
-      final matchesSearch = p['name'].toString().toLowerCase().contains(_searchQuery.toLowerCase());
-      final matchesCategory = _selectedCategory == null || 
-          _selectedCategory == 'Semua' || 
-          p['category'].toString().toLowerCase() == _selectedCategory!.toLowerCase();
-      return matchesSearch && matchesCategory;
-    }).toList();
+  Future<void> _logout() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('KELUAR'),
+        content: const Text('Apakah Anda yakin ingin keluar dari akun ini?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('BATAL'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: HuashuTheme.stainedCinnabarRed,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('KELUAR'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await _api.secureStorage.deleteAll();
+      CartManager.clear();
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          (route) => false,
+        );
+      }
+    }
   }
 
-  double _parsePrice(dynamic priceStr) {
-    if (priceStr == null) return 0.0;
-    // Bersihkan mata uang 'Rp ' dan '.' pemisah ribuan
-    final cleaned = priceStr.toString().replaceAll('Rp ', '').replaceAll('.', '').trim();
-    return double.tryParse(cleaned) ?? 0.0;
+  List<dynamic> get _filteredProducts {
+    return _products.where((p) {
+      final name = p['name']?.toString() ?? '';
+      final category = p['category']?.toString() ?? '';
+      final matchesSearch = name.toLowerCase().contains(_searchQuery.toLowerCase());
+      final matchesCategory = _selectedCategory == null ||
+          _selectedCategory == 'Semua' ||
+          category.toLowerCase() == _selectedCategory!.toLowerCase();
+      return matchesSearch && matchesCategory;
+    }).toList();
   }
 
   @override
@@ -96,20 +130,18 @@ class _CatalogScreenState extends State<CatalogScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
         title: Text(
-          'KATALOG HUASHU',
+          '華書 KATALOG',
           style: GoogleFonts.notoSerifSc(
-            fontSize: 20,
+            fontSize: 18,
             fontWeight: FontWeight.bold,
             color: HuashuTheme.charcoalBlack,
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.history_edu, color: HuashuTheme.charcoalBlack),
+            icon: const Icon(Icons.history_edu),
+            tooltip: 'Riwayat Pesanan',
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const OrderHistoryScreen()),
@@ -121,17 +153,14 @@ class _CatalogScreenState extends State<CatalogScreen> {
             builder: (context, cart, _) {
               return Badge(
                 label: Text(cart.length.toString()),
-                backgroundColor: HuashuTheme.stainedCinnabarRed,
                 isLabelVisible: cart.isNotEmpty,
                 child: IconButton(
-                  icon: const Icon(Icons.shopping_bag_outlined, color: HuashuTheme.charcoalBlack),
+                  icon: const Icon(Icons.shopping_bag_outlined),
+                  tooltip: 'Keranjang',
                   onPressed: () {
                     if (cart.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Keranjang belanja Anda masih kosong'),
-                          backgroundColor: HuashuTheme.stainedCinnabarRed,
-                        ),
+                        const SnackBar(content: Text('Keranjang belanja Anda masih kosong')),
                       );
                       return;
                     }
@@ -143,188 +172,171 @@ class _CatalogScreenState extends State<CatalogScreen> {
               );
             },
           ),
-          const SizedBox(width: 16),
+          IconButton(
+            icon: const Icon(Icons.logout, size: 20),
+            tooltip: 'Keluar',
+            onPressed: _logout,
+          ),
+          const SizedBox(width: HuashuTheme.space8),
         ],
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Kolom Pencarian Gaya Kaligrafi
+          // ─── Kolom Pencarian ───────────────────────────
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: HuashuTheme.space24,
+              vertical: HuashuTheme.space12,
+            ),
             child: TextField(
               onChanged: (val) => setState(() => _searchQuery = val),
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 hintText: 'Cari barang seni / produk...',
-                prefixIcon: const Icon(Icons.search, color: HuashuTheme.lightInkLine),
-                hintStyle: GoogleFonts.inter(color: HuashuTheme.lightInkLine),
+                prefixIcon: Icon(Icons.search, color: HuashuTheme.warmStone),
               ),
             ),
           ),
-          
-          // Kategori Horizontal dengan Desain Bersih
+
+          // ─── Kategori Horizontal ──────────────────────
           SizedBox(
-            height: 48,
+            height: 44,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: const EdgeInsets.symmetric(horizontal: HuashuTheme.space24),
               itemCount: _categories.length,
               itemBuilder: (context, index) {
                 final cat = _categories[index];
                 final isSelected = _selectedCategory == cat || (_selectedCategory == null && cat == 'Semua');
                 return Padding(
-                  padding: const EdgeInsets.only(right: 16),
+                  padding: const EdgeInsets.only(right: HuashuTheme.space12),
                   child: ChoiceChip(
-                    label: Text(cat),
+                    label: Text(
+                      cat,
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        letterSpacing: 0.5,
+                        color: isSelected ? HuashuTheme.xuanPaperBg : HuashuTheme.charcoalBlack,
+                      ),
+                    ),
                     selected: isSelected,
-                    onSelected: (selected) {
-                      setState(() {
-                        _selectedCategory = cat;
-                      });
-                    },
-                    selectedColor: HuashuTheme.charcoalBlack,
-                    backgroundColor: Colors.transparent,
-                    labelStyle: GoogleFonts.inter(
-                      fontSize: 13,
-                      color: isSelected ? HuashuTheme.xuanPaperBg : HuashuTheme.charcoalBlack,
-                    ),
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.zero,
-                    ),
-                    side: BorderSide(
-                      color: isSelected ? HuashuTheme.charcoalBlack : HuashuTheme.lightInkLine,
-                      width: 0.5,
-                    ),
+                    onSelected: (_) => setState(() => _selectedCategory = cat),
                   ),
                 );
               },
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: HuashuTheme.space12),
           const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24.0),
+            padding: EdgeInsets.symmetric(horizontal: HuashuTheme.space24),
             child: InkBrushDivider(height: 1.5),
           ),
-          
-          // Grid Asimetris Staggered List
+
+          // ─── Grid Produk ──────────────────────────────
           Expanded(
             child: _isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(color: HuashuTheme.mineralJadeGreen),
-                  )
+                ? const Center(child: CircularProgressIndicator())
                 : _errorMessage != null
-                    ? Center(
-                        child: Text(
-                          _errorMessage!,
-                          style: GoogleFonts.inter(color: HuashuTheme.stainedCinnabarRed),
-                        ),
+                    ? HuashuEmptyState(
+                        icon: Icons.cloud_off,
+                        message: _errorMessage!,
+                        onRetry: _fetchProducts,
                       )
                     : filtered.isEmpty
-                        ? Center(
-                            child: Text(
-                              'Tidak ada produk yang cocok dengan pencarian Anda.',
-                              style: GoogleFonts.inter(color: HuashuTheme.lightInkLine),
-                            ),
+                        ? const HuashuEmptyState(
+                            icon: Icons.search_off,
+                            message: 'Tidak ada produk yang cocok\ndengan pencarian Anda.',
                           )
-                        : GridView.builder(
-                            padding: const EdgeInsets.all(24),
-                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              crossAxisSpacing: 20,
-                              mainAxisSpacing: 24,
-                              childAspectRatio: 0.72,
+                        : RefreshIndicator(
+                            color: HuashuTheme.mineralJadeGreen,
+                            onRefresh: _fetchProducts,
+                            child: GridView.builder(
+                              padding: const EdgeInsets.all(HuashuTheme.space24),
+                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                crossAxisSpacing: 16,
+                                mainAxisSpacing: 20,
+                                childAspectRatio: 0.68,
+                              ),
+                              itemCount: filtered.length,
+                              itemBuilder: (context, index) => _buildProductCard(filtered[index]),
                             ),
-                            itemCount: filtered.length,
-                            itemBuilder: (context, index) {
-                              final p = filtered[index];
-                              final priceDouble = _parsePrice(p['price']);
-
-                              return GestureDetector(
-                                onTap: () {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => ProductDetailScreen(
-                                        product: p,
-                                        priceDouble: priceDouble,
-                                      ),
-                                    ),
-                                  );
-                                },
-                                child: Container(
-                                  decoration: const BoxDecoration(
-                                    border: Border(
-                                      bottom: BorderSide(color: HuashuTheme.lightInkLine, width: 0.5),
-                                    ),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      // Gambar dengan Caching dan Bingkai Tipis
-                                      Expanded(
-                                        child: Container(
-                                          width: double.infinity,
-                                          decoration: BoxDecoration(
-                                            border: Border.all(color: HuashuTheme.lightInkLine, width: 0.5),
-                                          ),
-                                          child: CachedNetworkImage(
-                                            imageUrl: p['image_url'] ?? '',
-                                            fit: BoxFit.cover,
-                                            placeholder: (context, url) => Container(
-                                              color: Colors.transparent,
-                                              child: const Center(
-                                                child: SizedBox(
-                                                  width: 20,
-                                                  height: 20,
-                                                  child: CircularProgressIndicator(
-                                                    strokeWidth: 1.5,
-                                                    color: HuashuTheme.lightInkLine,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                            errorWidget: (context, url, error) => const Icon(
-                                              Icons.image_outlined,
-                                              color: HuashuTheme.lightInkLine,
-                                              size: 32,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 12),
-                                      // Kategori Teks Kecil
-                                      Text(
-                                        p['category'].toString().toUpperCase(),
-                                        style: Theme.of(context).textTheme.labelSmall,
-                                      ),
-                                      const SizedBox(height: 4),
-                                      // Nama Produk (Sans-serif tebal)
-                                      Text(
-                                        p['name'],
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: GoogleFonts.inter(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                          color: HuashuTheme.charcoalBlack,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      // Harga (Merah Sinabar Serif)
-                                      Text(
-                                        p['price'] ?? 'Rp 0',
-                                        style: GoogleFonts.notoSerifSc(
-                                          color: HuashuTheme.stainedCinnabarRed,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 12),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
                           ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProductCard(dynamic p) {
+    final priceDouble = ApiService.parsePrice(p['price']);
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => ProductDetailScreen(product: p, priceDouble: priceDouble),
+          ),
+        );
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Gambar dengan border tipis
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                border: Border.all(color: HuashuTheme.lightInkLine, width: HuashuTheme.hairline),
+              ),
+              child: CachedNetworkImage(
+                imageUrl: p['image_url']?.toString() ?? '',
+                fit: BoxFit.cover,
+                placeholder: (_, __) => const Center(
+                  child: SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 1.5),
+                  ),
+                ),
+                errorWidget: (_, __, ___) => Center(
+                  child: Icon(
+                    Icons.image_outlined,
+                    color: HuashuTheme.charcoalBlack.withValues(alpha: 0.15),
+                    size: 32,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: HuashuTheme.space8),
+
+          // Kategori
+          HuashuSectionLabel(text: p['category']?.toString() ?? ''),
+          const SizedBox(height: HuashuTheme.space4),
+
+          // Nama Produk
+          Text(
+            p['name']?.toString() ?? '',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.inter(
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
+              color: HuashuTheme.charcoalBlack,
+            ),
+          ),
+          const SizedBox(height: HuashuTheme.space4),
+
+          // Harga
+          HuashuPrice(price: ApiService.formatPrice(priceDouble)),
+
+          const SizedBox(height: HuashuTheme.space8),
+
+          // Garis bawah
+          Container(
+            height: HuashuTheme.hairline,
+            color: HuashuTheme.lightInkLine,
           ),
         ],
       ),

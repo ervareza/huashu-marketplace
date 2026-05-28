@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/huashu_theme.dart';
+import '../../../core/network/api_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -16,12 +16,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final _dio = Dio();
+  final _api = ApiService();
   bool _isLoading = false;
+  bool _obscurePassword = true;
+  bool _obscureConfirm = true;
   String? _errorMessage;
   String? _successMessage;
-
-  final String _registerUrl = 'https://d04a-2404-c0-b301-8af6-a587-34e-b9b3-3cba.ngrok-free.app/api/auth/register';
 
   Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
@@ -33,8 +33,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
 
     try {
-      final response = await _dio.post(
-        _registerUrl,
+      final response = await _api.dio.post(
+        '/api/auth/register',
         data: {
           'name': _nameController.text.trim(),
           'email': _emailController.text.trim(),
@@ -43,22 +43,40 @@ class _RegisterScreenState extends State<RegisterScreen> {
         },
       );
 
-      if (response.statusCode == 201 && response.data['success'] == true) {
+      final data = response.data;
+      if (data is Map<String, dynamic> &&
+          (response.statusCode == 201 || response.statusCode == 200) &&
+          data['success'] == true) {
         setState(() {
-          _successMessage = 'Registrasi berhasil! Silakan kembali ke layar masuk.';
+          _successMessage = 'Registrasi berhasil! Mengalihkan ke halaman masuk...';
         });
         _nameController.clear();
         _emailController.clear();
         _passwordController.clear();
         _confirmPasswordController.clear();
-      } else {
-        setState(() {
-          _errorMessage = response.data['message'] ?? 'Registrasi gagal';
-        });
+
+        await Future.delayed(const Duration(seconds: 2));
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
+        return;
       }
+
+      setState(() {
+        _errorMessage = (data is Map<String, dynamic>)
+            ? data['message']?.toString() ?? 'Registrasi gagal.'
+            : 'Registrasi gagal. Response tidak valid dari server.';
+      });
     } on DioException catch (e) {
       setState(() {
-        _errorMessage = e.response?.data['message'] ?? 'Email sudah terdaftar atau terjadi kesalahan server.';
+        _errorMessage = ApiService.extractErrorMessage(
+          e,
+          fallback: 'Email sudah terdaftar atau terjadi kesalahan server.',
+        );
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Terjadi kesalahan tak terduga: ${e.toString()}';
       });
     } finally {
       if (mounted) {
@@ -81,19 +99,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: HuashuTheme.charcoalBlack,
-      ),
+      appBar: AppBar(),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 8.0),
+          padding: const EdgeInsets.symmetric(
+            horizontal: HuashuTheme.space32,
+            vertical: HuashuTheme.space8,
+          ),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // ─── Header ───────────────────────────────────
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -102,78 +120,45 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       'DAFTAR\nBARU',
                       style: Theme.of(context).textTheme.displayLarge,
                     ),
-                    Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: HuashuTheme.stainedCinnabarRed,
-                          width: 1.5,
-                        ),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        '書',
-                        style: GoogleFonts.notoSerifSc(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: HuashuTheme.stainedCinnabarRed,
-                        ),
-                      ),
-                    ),
+                    const HuashuSeal(character: '書'),
                   ],
                 ),
-                const SizedBox(height: 48),
+
+                const SizedBox(height: HuashuTheme.space12),
+                Text(
+                  'Mulai perjalanan Anda bersama kami.',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+
+                const SizedBox(height: HuashuTheme.space32),
+
+                // ─── Status Messages ──────────────────────────
                 if (_errorMessage != null) ...[
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: HuashuTheme.stainedCinnabarRed, width: 0.5),
-                    ),
-                    child: Text(
-                      _errorMessage!,
-                      style: GoogleFonts.inter(
-                        color: HuashuTheme.stainedCinnabarRed,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
+                  HuashuStatusBox(message: _errorMessage!, type: HuashuStatusType.error),
+                  const SizedBox(height: HuashuTheme.space24),
                 ],
                 if (_successMessage != null) ...[
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: HuashuTheme.mineralJadeGreen, width: 0.5),
-                    ),
-                    child: Text(
-                      _successMessage!,
-                      style: GoogleFonts.inter(
-                        color: HuashuTheme.mineralJadeGreen,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
+                  HuashuStatusBox(message: _successMessage!, type: HuashuStatusType.success),
+                  const SizedBox(height: HuashuTheme.space24),
                 ],
+
+                // ─── Form Fields ─────────────────────────────
                 TextFormField(
                   controller: _nameController,
                   decoration: const InputDecoration(
-                    labelText: 'Nama Lengkap (Full Name)',
+                    labelText: 'Nama Lengkap',
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Nama lengkap tidak boleh kosong';
                     }
                     if (value.trim().length < 3) {
-                      return 'Nama lengkap minimal terdiri dari 3 karakter';
+                      return 'Nama lengkap minimal 3 karakter';
                     }
                     return null;
                   },
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: HuashuTheme.space24),
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
@@ -190,29 +175,45 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: HuashuTheme.space24),
                 TextFormField(
                   controller: _passwordController,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Kata Sandi (Password)',
+                  obscureText: _obscurePassword,
+                  decoration: InputDecoration(
+                    labelText: 'Kata Sandi',
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                        color: HuashuTheme.warmStone,
+                        size: 20,
+                      ),
+                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                    ),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Password tidak boleh kosong';
                     }
                     if (value.length < 6) {
-                      return 'Password minimal terdiri dari 6 karakter';
+                      return 'Password minimal 6 karakter';
                     }
                     return null;
                   },
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: HuashuTheme.space24),
                 TextFormField(
                   controller: _confirmPasswordController,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Konfirmasi Kata Sandi (Confirm Password)',
+                  obscureText: _obscureConfirm,
+                  decoration: InputDecoration(
+                    labelText: 'Konfirmasi Kata Sandi',
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscureConfirm ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                        color: HuashuTheme.warmStone,
+                        size: 20,
+                      ),
+                      onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
+                    ),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -224,7 +225,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 48),
+
+                const SizedBox(height: HuashuTheme.space48),
+
+                // ─── Tombol Daftar ────────────────────────────
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -233,15 +237,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ? const SizedBox(
                             width: 20,
                             height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: HuashuTheme.xuanPaperBg,
-                            ),
+                            child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Text('DAFTAR SEKARANG'),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: HuashuTheme.space32),
               ],
             ),
           ),

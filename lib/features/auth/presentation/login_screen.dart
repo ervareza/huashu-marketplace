@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/huashu_theme.dart';
+import '../../../core/network/api_service.dart';
 import 'register_screen.dart';
 import '../../product/presentation/catalog_screen.dart';
 
@@ -13,16 +13,28 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _dio = Dio();
-  final _secureStorage = const FlutterSecureStorage();
+  final _api = ApiService();
   bool _isLoading = false;
+  bool _obscurePassword = true;
   String? _errorMessage;
 
-  final String _loginUrl = 'https://d04a-2404-c0-b301-8af6-a587-34e-b9b3-3cba.ngrok-free.app/api/auth/login';
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _fadeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _fadeAnimation = CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
+    _fadeController.forward();
+  }
 
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
@@ -33,39 +45,59 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      final response = await _dio.post(
-        _loginUrl,
+      final response = await _api.dio.post(
+        '/api/auth/login',
         data: {
           'email': _emailController.text.trim(),
           'password': _passwordController.text,
         },
       );
 
-      if (response.statusCode == 200 && response.data['success'] == true) {
-        final accessToken = response.data['data']['token'];
-        final refreshToken = response.data['data']['refresh_token'];
-        final userName = response.data['data']['name'];
-        final userRole = response.data['data']['role'];
+      final data = response.data;
+      if (data is Map<String, dynamic> &&
+          response.statusCode == 200 &&
+          data['success'] == true) {
+        final responseData = data['data'];
+        if (responseData is Map<String, dynamic>) {
+          final accessToken = responseData['token']?.toString();
+          final refreshToken = responseData['refresh_token']?.toString();
+          final userName = responseData['name']?.toString() ?? '';
+          final userRole = responseData['role']?.toString() ?? '';
 
-        // Simpan kredensial secara aman
-        await _secureStorage.write(key: 'access_token', value: accessToken);
-        await _secureStorage.write(key: 'refresh_token', value: refreshToken);
-        await _secureStorage.write(key: 'user_name', value: userName);
-        await _secureStorage.write(key: 'user_role', value: userRole);
+          if (accessToken != null) {
+            await _api.secureStorage.write(key: 'access_token', value: accessToken);
+          }
+          if (refreshToken != null) {
+            await _api.secureStorage.write(key: 'refresh_token', value: refreshToken);
+          }
+          await _api.secureStorage.write(key: 'user_name', value: userName);
+          await _api.secureStorage.write(key: 'user_role', value: userRole);
 
-        if (mounted) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const CatalogScreen()),
-          );
+          if (mounted) {
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (_) => const CatalogScreen()),
+              (route) => false,
+            );
+          }
+          return;
         }
-      } else {
-        setState(() {
-          _errorMessage = response.data['message'] ?? 'Login gagal';
-        });
       }
+
+      setState(() {
+        _errorMessage = (data is Map<String, dynamic>)
+            ? data['message']?.toString() ?? 'Login gagal. Format response tidak dikenali.'
+            : 'Login gagal. Server mengembalikan response tidak valid.';
+      });
     } on DioException catch (e) {
       setState(() {
-        _errorMessage = e.response?.data['message'] ?? 'Koneksi ke server gagal. Harap coba lagi.';
+        _errorMessage = ApiService.extractErrorMessage(
+          e,
+          fallback: 'Email atau password salah. Harap coba lagi.',
+        );
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Terjadi kesalahan tak terduga: ${e.toString()}';
       });
     } finally {
       if (mounted) {
@@ -80,6 +112,7 @@ class _LoginScreenState extends State<LoginScreen> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _fadeController.dispose();
     super.dispose();
   }
 
@@ -87,131 +120,147 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 48),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'MASUK\nPERAN',
-                      style: Theme.of(context).textTheme.displayLarge,
-                    ),
-                    // Stempel Merah Tradisional (Seal Emblem)
-                    Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: HuashuTheme.stainedCinnabarRed,
-                          width: 1.5,
-                        ),
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(
+              horizontal: HuashuTheme.space32,
+              vertical: HuashuTheme.space24,
+            ),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: HuashuTheme.space48),
+
+                  // ─── Header dengan Stempel ───────────────────
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'MASUK\nPERAN',
+                        style: Theme.of(context).textTheme.displayLarge,
                       ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        '華',
-                        style: GoogleFonts.notoSerifSc(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: HuashuTheme.stainedCinnabarRed,
-                        ),
-                      ),
+                      const HuashuSeal(character: '華'),
+                    ],
+                  ),
+
+                  const SizedBox(height: HuashuTheme.space12),
+                  Text(
+                    'Selamat datang kembali di dunia seni.',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+
+                  const SizedBox(height: HuashuTheme.space48),
+
+                  // ─── Error Message ───────────────────────────
+                  if (_errorMessage != null) ...[
+                    HuashuStatusBox(
+                      message: _errorMessage!,
+                      type: HuashuStatusType.error,
                     ),
+                    const SizedBox(height: HuashuTheme.space24),
                   ],
-                ),
-                const SizedBox(height: 64),
-                if (_errorMessage != null) ...[
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: HuashuTheme.stainedCinnabarRed, width: 0.5),
+
+                  // ─── Form Fields ─────────────────────────────
+                  TextFormField(
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: const InputDecoration(
+                      labelText: 'Surat Elektronik (Email)',
                     ),
-                    child: Text(
-                      _errorMessage!,
-                      style: GoogleFonts.inter(
-                        color: HuashuTheme.stainedCinnabarRed,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                ],
-                TextFormField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(
-                    labelText: 'Surat Elektronik (Email)',
-                  ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Email tidak boleh kosong';
-                    }
-                    if (!RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$').hasMatch(value.trim())) {
-                      return 'Format email tidak valid';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 24),
-                TextFormField(
-                  controller: _passwordController,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Kata Sandi (Password)',
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Password tidak boleh kosong';
-                    }
-                    if (value.length < 6) {
-                      return 'Password minimal terdiri dari 6 karakter';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 48),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _login,
-                    child: _isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: HuashuTheme.xuanPaperBg,
-                            ),
-                          )
-                        : const Text('MASUK'),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Align(
-                  alignment: Alignment.center,
-                  child: TextButton(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const RegisterScreen()),
-                      );
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Email tidak boleh kosong';
+                      }
+                      if (!RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$').hasMatch(value.trim())) {
+                        return 'Format email tidak valid';
+                      }
+                      return null;
                     },
-                    child: Text(
-                      'Belum memiliki akun? Daftarkan diri Anda',
-                      style: GoogleFonts.inter(
-                        color: HuashuTheme.charcoalBlack.withOpacity(0.6),
-                        decoration: TextDecoration.underline,
+                  ),
+                  const SizedBox(height: HuashuTheme.space24),
+                  TextFormField(
+                    controller: _passwordController,
+                    obscureText: _obscurePassword,
+                    decoration: InputDecoration(
+                      labelText: 'Kata Sandi (Password)',
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                          color: HuashuTheme.warmStone,
+                          size: 20,
+                        ),
+                        onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                      ),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Password tidak boleh kosong';
+                      }
+                      if (value.length < 6) {
+                        return 'Password minimal terdiri dari 6 karakter';
+                      }
+                      return null;
+                    },
+                  ),
+
+                  const SizedBox(height: HuashuTheme.space48),
+
+                  // ─── Tombol Login ────────────────────────────
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _login,
+                      child: _isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Text('MASUK'),
+                    ),
+                  ),
+
+                  const SizedBox(height: HuashuTheme.space24),
+
+                  // ─── Link Register ──────────────────────────
+                  Align(
+                    alignment: Alignment.center,
+                    child: TextButton(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const RegisterScreen()),
+                        );
+                      },
+                      child: Text(
+                        'Belum memiliki akun? Daftarkan diri Anda',
+                        style: GoogleFonts.inter(
+                          color: HuashuTheme.charcoalBlack.withValues(alpha: 0.6),
+                          decoration: TextDecoration.underline,
+                          decorationColor: HuashuTheme.charcoalBlack.withValues(alpha: 0.3),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+
+                  const SizedBox(height: HuashuTheme.space64),
+
+                  // ─── Footer Watermark ───────────────────────
+                  Center(
+                    child: Text(
+                      '— 華 書 —',
+                      style: GoogleFonts.notoSerifSc(
+                        fontSize: 14,
+                        color: HuashuTheme.lightInkLine,
+                        letterSpacing: 8,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
