@@ -25,7 +25,7 @@ class AdminPanelScreen extends StatelessWidget {
               _buildDashboardCard(
                 context,
                 title: 'Manajemen Produk',
-                subtitle: 'Atur inventaris, tambah atau hapus karya seni Anda dari katalog.',
+                subtitle: 'Atur inventaris, tambah atau hapus produk Anda dari katalog.',
                 icon: Icons.storefront_outlined,
                 onTap: () {
                   Navigator.of(context).push(

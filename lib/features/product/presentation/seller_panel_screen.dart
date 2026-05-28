@@ -233,7 +233,7 @@ class _SellerPanelScreenState extends State<SellerPanelScreen> with SingleTicker
         builder: (context, setDialogState) {
           return AlertDialog(
             title: Text(
-              'EDIT KARYA SENI',
+              'EDIT PRODUK',
               style: GoogleFonts.notoSerifSc(fontWeight: FontWeight.bold),
             ),
             content: SizedBox(
@@ -247,7 +247,7 @@ class _SellerPanelScreenState extends State<SellerPanelScreen> with SingleTicker
                         controller: editNameCtrl,
                         decoration: const InputDecoration(
                           labelText: 'Nama Produk',
-                          hintText: 'Masukkan nama karya seni',
+                          hintText: 'Masukkan nama produk',
                         ),
                       ),
                       const SizedBox(height: HuashuTheme.space12),
@@ -256,7 +256,7 @@ class _SellerPanelScreenState extends State<SellerPanelScreen> with SingleTicker
                         maxLines: 2,
                         decoration: const InputDecoration(
                           labelText: 'Deskripsi',
-                          hintText: 'Deskripsikan estetika karya seni Anda',
+                          hintText: 'Deskripsikan detail produk Anda',
                         ),
                       ),
                       const SizedBox(height: HuashuTheme.space12),
@@ -420,7 +420,7 @@ class _SellerPanelScreenState extends State<SellerPanelScreen> with SingleTicker
           indicatorSize: TabBarIndicatorSize.tab,
           tabs: const [
             Tab(icon: Icon(Icons.palette_outlined), text: 'Galeri Saya'),
-            Tab(icon: Icon(Icons.add_photo_alternate_outlined), text: 'Tambah Karya'),
+            Tab(icon: Icon(Icons.add_photo_alternate_outlined), text: 'Tambah Produk'),
           ],
         ),
       ),
@@ -469,7 +469,7 @@ class _SellerPanelScreenState extends State<SellerPanelScreen> with SingleTicker
     if (_myProducts.isEmpty) {
       return const HuashuEmptyState(
         icon: Icons.palette_outlined,
-        message: 'Galeri karya seni Anda kosong.\nUnggah karya pertama Anda sekarang.',
+        message: 'Daftar produk Anda kosong.\nTambahkan produk pertama Anda sekarang.',
       );
     }
 
@@ -490,13 +490,13 @@ class _SellerPanelScreenState extends State<SellerPanelScreen> with SingleTicker
           final price = ApiService.parsePrice(p['price']);
           final stock = p['stock'] ?? 0;
           final isActive = p['is_active'] == true;
-          final name = p['name']?.toString() ?? 'Karya Seni';
+          final name = p['name']?.toString() ?? 'Produk';
           final initial = name.isNotEmpty ? name[0] : '墨';
 
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Cover Karya Seni
+              // Cover Produk
               Container(
                 width: 90,
                 height: 90,
@@ -566,12 +566,12 @@ class _SellerPanelScreenState extends State<SellerPanelScreen> with SingleTicker
                 children: [
                   IconButton(
                     icon: const Icon(Icons.edit_outlined, size: 20),
-                    tooltip: 'Edit Karya',
+                    tooltip: 'Edit Produk',
                     onPressed: () => _editProductDialog(p),
                   ),
                   IconButton(
                     icon: const Icon(Icons.delete_outline, size: 20, color: HuashuTheme.stainedCinnabarRed),
-                    tooltip: 'Hapus Karya',
+                    tooltip: 'Hapus Produk',
                     onPressed: () => _deleteProduct(p['id']),
                   ),
                 ],
@@ -592,7 +592,7 @@ class _SellerPanelScreenState extends State<SellerPanelScreen> with SingleTicker
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'UNGGAH KARYA SENI BARU',
+              'TAMBAH PRODUK BARU',
               style: GoogleFonts.notoSerifSc(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -602,7 +602,7 @@ class _SellerPanelScreenState extends State<SellerPanelScreen> with SingleTicker
             ),
             const SizedBox(height: 4),
             const Text(
-              'Perkenalkan karya terbaik Anda kepada kolektor di galeri tinta Huashu.',
+              'Tambahkan produk baru Anda ke dalam katalog untuk mulai berjualan.',
               style: TextStyle(fontSize: 12, color: Colors.grey),
             ),
             const SizedBox(height: 8),
@@ -613,12 +613,12 @@ class _SellerPanelScreenState extends State<SellerPanelScreen> with SingleTicker
             TextFormField(
               controller: _nameController,
               decoration: const InputDecoration(
-                labelText: 'NAMA KARYA SENI',
+                labelText: 'NAMA PRODUK',
                 hintText: 'contoh: Teko Teh Keramik Zisha Yixing',
               ),
               validator: (val) {
                 if (val == null || val.trim().isEmpty) {
-                  return 'Nama karya tidak boleh kosong';
+                  return 'Nama produk tidak boleh kosong';
                 }
                 return null;
               },
@@ -634,7 +634,7 @@ class _SellerPanelScreenState extends State<SellerPanelScreen> with SingleTicker
               ),
               validator: (val) {
                 if (val == null || val.trim().isEmpty) {
-                  return 'Deskripsi karya tidak boleh kosong';
+                  return 'Deskripsi produk tidak boleh kosong';
                 }
                 return null;
               },
@@ -668,7 +668,7 @@ class _SellerPanelScreenState extends State<SellerPanelScreen> with SingleTicker
                     controller: _stockController,
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
-                      labelText: 'STOK KARYA',
+                      labelText: 'STOK PRODUK',
                       hintText: 'contoh: 5',
                     ),
                     validator: (val) {
@@ -689,7 +689,7 @@ class _SellerPanelScreenState extends State<SellerPanelScreen> with SingleTicker
             DropdownButtonFormField<String>(
               value: _selectedCategory,
               decoration: const InputDecoration(
-                labelText: 'KATEGORI KARYA',
+                labelText: 'KATEGORI PRODUK',
               ),
               items: _categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
               onChanged: (val) {
@@ -730,7 +730,7 @@ class _SellerPanelScreenState extends State<SellerPanelScreen> with SingleTicker
                         ),
                         const SizedBox(height: 2),
                         const Text(
-                          'Sistem otomatis memproses upload 1x1 PNG. Di halaman depan, stempel tinta eksklusif (berdasarkan huruf depan produk) akan digenerate sebagai visual representasi karya seni Anda.',
+                          'Sistem otomatis memproses upload 1x1 PNG. Di halaman depan, inisial produk akan ditampilkan sebagai visual representasi produk Anda.',
                           style: TextStyle(fontSize: 10, color: Colors.grey),
                         ),
                       ],
@@ -758,7 +758,7 @@ class _SellerPanelScreenState extends State<SellerPanelScreen> with SingleTicker
                         child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                       )
                     : Text(
-                        'UNGGAH KARYA KE GALERI',
+                        'SIMPAN PRODUK',
                         style: GoogleFonts.notoSerifSc(
                           fontWeight: FontWeight.bold,
                           letterSpacing: 1.5,

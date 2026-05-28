@@ -174,7 +174,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   Widget _buildOrderDetail() {
     final paymentStatus = _order!['payment_status']?.toString() ?? 'unknown';
     final orderStatus = _order!['status']?.toString() ?? 'unknown';
-    final isUnpaid = paymentStatus == 'unpaid';
+    final isUnpaid = paymentStatus == 'unpaid' || paymentStatus == 'pending';
 
     final shippingAddress = _order!['shipping_address'];
     final items = _order!['order_items'] as List<dynamic>? ?? [];
