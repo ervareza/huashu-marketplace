@@ -30,6 +30,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   List<dynamic> _shippingRates = [];
   Map<String, dynamic>? _selectedRate;
   bool _isCalculatingShipping = false;
+  
+  String _selectedCourier = 'jne';
+  final List<String> _availableCouriers = ['jne', 'pos', 'tiki', 'jnt', 'sicepat'];
 
   String? _appliedVoucherCode;
   double _discountAmount = 0.0;
@@ -64,11 +67,25 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Future<void> _calculateShipping() async {
     if (_selectedAddress == null) return;
     
+    final destinationId = _selectedAddress!['city_id'];
+    if (destinationId == null) {
+      if (mounted) {
+        setState(() {
+          _shippingRates = [];
+          _selectedRate = null;
+        });
+        _showError('Alamat Anda harus diperbarui (Pilih Kota via Pencarian) untuk menghitung ongkir.');
+      }
+      return;
+    }
+
     setState(() => _isCalculatingShipping = true);
     try {
       final response = await _api.dio.post('/api/shipping/calculate', data: {
-        'destination': _selectedAddress!['city'],
-        'weight': 1.0, // Asumsi 1 kg
+        'origin': 501, // Default Yogyakarta
+        'destination': int.parse(destinationId.toString()),
+        'weight': 1000, // 1 kg
+        'courier': _selectedCourier,
       });
       if (response.statusCode == 200 && response.data['success'] == true) {
         final rates = response.data['data']['rates'] ?? [];
@@ -76,11 +93,20 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           _shippingRates = rates;
           if (rates.isNotEmpty) {
             _selectedRate = rates.first;
+          } else {
+            _selectedRate = null;
           }
         });
       }
     } catch (e) {
       debugPrint("Gagal hitung ongkir: $e");
+      if (mounted) {
+        _showError('Gagal menghitung ongkos kirim untuk kurir $_selectedCourier.');
+        setState(() {
+          _shippingRates = [];
+          _selectedRate = null;
+        });
+      }
     } finally {
       if (mounted) setState(() => _isCalculatingShipping = false);
     }
@@ -288,6 +314,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       const HuashuSectionLabel(text: 'Metode Pengiriman'),
                       const SizedBox(height: HuashuTheme.space12),
                       
+                      DropdownButtonFormField<String>(
+                        value: _selectedCourier,
+                        decoration: const InputDecoration(labelText: 'Pilih Kurir'),
+                        items: _availableCouriers.map((c) => DropdownMenuItem(value: c, child: Text(c.toUpperCase()))).toList(),
+                        onChanged: (val) {
+                          if (val != null) {
+                            setState(() => _selectedCourier = val);
+                            _calculateShipping();
+                          }
+                        },
+                      ),
+                      const SizedBox(height: HuashuTheme.space12),
+
                       if (_isCalculatingShipping)
                         const Center(child: Padding(padding: EdgeInsets.all(16.0), child: CircularProgressIndicator(color: HuashuTheme.mineralJadeGreen)))
                       else if (_shippingRates.isNotEmpty)
@@ -303,7 +342,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                 value: rate,
                                 groupValue: _selectedRate,
                                 title: Text('${rate['courier']} - ${rate['service']}', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
-                                subtitle: Text('${rate['description']} (Estimasi: ${rate['etd']})', style: GoogleFonts.inter(fontSize: 12)),
+                                subtitle: Text('${rate['description']} (Estimasi: ${rate['etd']} hari)', style: GoogleFonts.inter(fontSize: 12)),
                                 secondary: Text(ApiService.formatPrice((rate['cost'] as num).toDouble()), style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: HuashuTheme.mineralJadeGreen)),
                                 activeColor: HuashuTheme.mineralJadeGreen,
                                 onChanged: (value) {
@@ -313,8 +352,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             }).toList(),
                           ),
                         )
+                      else if (_selectedAddress == null)
+                        Text('Pilih alamat untuk melihat opsi pengiriman.', style: GoogleFonts.inter(color: Colors.grey))
                       else
-                        Text('Pilih alamat untuk melihat opsi pengiriman.', style: GoogleFonts.inter(color: Colors.grey)),
+                        Text('Tidak ada layanan pengiriman untuk kurir ini.', style: GoogleFonts.inter(color: HuashuTheme.stainedCinnabarRed)),
 
                       const SizedBox(height: HuashuTheme.space24),
                       const InkBrushDivider(height: 1),

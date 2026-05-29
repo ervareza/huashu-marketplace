@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/huashu_theme.dart';
 import '../../../core/network/api_service.dart';
+import 'destination_search_delegate.dart';
 
 class AddressScreen extends StatefulWidget {
   const AddressScreen({super.key});
@@ -57,6 +58,8 @@ class _AddressScreenState extends State<AddressScreen> {
     final cityCtrl = TextEditingController();
     final provinceCtrl = TextEditingController();
     final postalCtrl = TextEditingController();
+    int? cityId;
+    int? provinceId;
     bool isDefault = false;
 
     showModalBottomSheet(
@@ -104,13 +107,49 @@ class _AddressScreenState extends State<AddressScreen> {
                       const SizedBox(height: 8),
                       TextFormField(
                         controller: provinceCtrl,
-                        decoration: const InputDecoration(labelText: 'Provinsi'),
-                        validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
+                        decoration: const InputDecoration(labelText: 'Provinsi', suffixIcon: Icon(Icons.search)),
+                        readOnly: true,
+                        onTap: () async {
+                          final result = await showSearch(
+                            context: context,
+                            delegate: DestinationSearchDelegate(),
+                          );
+                          if (result != null) {
+                            setModalState(() {
+                              cityCtrl.text = result['city'] ?? '';
+                              if (result['subdistrict'] != null) {
+                                cityCtrl.text = '${result['subdistrict']}, ${result['type']} ${result['city']}';
+                              }
+                              provinceCtrl.text = result['province'] ?? '';
+                              cityId = int.tryParse(result['id'].toString());
+                              provinceId = int.tryParse(result['province_id']?.toString() ?? '');
+                            });
+                          }
+                        },
+                        validator: (v) => v!.isEmpty ? 'Wajib diisi (tap untuk mencari)' : null,
                       ),
                       const SizedBox(height: 8),
                       TextFormField(
                         controller: cityCtrl,
-                        decoration: const InputDecoration(labelText: 'Kota'),
+                        decoration: const InputDecoration(labelText: 'Kota / Kecamatan'),
+                        readOnly: true,
+                        onTap: () async {
+                          final result = await showSearch(
+                            context: context,
+                            delegate: DestinationSearchDelegate(),
+                          );
+                          if (result != null) {
+                            setModalState(() {
+                              cityCtrl.text = result['city'] ?? '';
+                              if (result['subdistrict'] != null) {
+                                cityCtrl.text = '${result['subdistrict']}, ${result['type']} ${result['city']}';
+                              }
+                              provinceCtrl.text = result['province'] ?? '';
+                              cityId = int.tryParse(result['id'].toString());
+                              provinceId = int.tryParse(result['province_id']?.toString() ?? '');
+                            });
+                          }
+                        },
                         validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
                       ),
                       const SizedBox(height: 8),
@@ -152,7 +191,9 @@ class _AddressScreenState extends State<AddressScreen> {
                                 'phone': phoneCtrl.text,
                                 'address': addressCtrl.text,
                                 'city': cityCtrl.text,
+                                'city_id': cityId,
                                 'province': provinceCtrl.text,
+                                'province_id': provinceId,
                                 'postal_code': postalCtrl.text,
                                 'is_default': isDefault,
                               });
@@ -231,6 +272,8 @@ class _AddressScreenState extends State<AddressScreen> {
       final cityCtrl = TextEditingController(text: addr['city']?.toString() ?? '');
       final provinceCtrl = TextEditingController(text: addr['province']?.toString() ?? '');
       final postalCtrl = TextEditingController(text: addr['postal_code']?.toString() ?? '');
+      int? cityId = addr['city_id'] != null ? int.tryParse(addr['city_id'].toString()) : null;
+      int? provinceId = addr['province_id'] != null ? int.tryParse(addr['province_id'].toString()) : null;
 
       showModalBottomSheet(
         context: context,
@@ -277,13 +320,49 @@ class _AddressScreenState extends State<AddressScreen> {
                         const SizedBox(height: 8),
                         TextFormField(
                           controller: provinceCtrl,
-                          decoration: const InputDecoration(labelText: 'Provinsi'),
-                          validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
+                          decoration: const InputDecoration(labelText: 'Provinsi', suffixIcon: Icon(Icons.search)),
+                          readOnly: true,
+                          onTap: () async {
+                            final result = await showSearch(
+                              context: context,
+                              delegate: DestinationSearchDelegate(),
+                            );
+                            if (result != null) {
+                              setModalState(() {
+                                cityCtrl.text = result['city'] ?? '';
+                                if (result['subdistrict'] != null) {
+                                  cityCtrl.text = '${result['subdistrict']}, ${result['type']} ${result['city']}';
+                                }
+                                provinceCtrl.text = result['province'] ?? '';
+                                cityId = int.tryParse(result['id'].toString());
+                                provinceId = int.tryParse(result['province_id']?.toString() ?? '');
+                              });
+                            }
+                          },
+                          validator: (v) => v!.isEmpty ? 'Wajib diisi (tap untuk mencari)' : null,
                         ),
                         const SizedBox(height: 8),
                         TextFormField(
                           controller: cityCtrl,
-                          decoration: const InputDecoration(labelText: 'Kota'),
+                          decoration: const InputDecoration(labelText: 'Kota / Kecamatan'),
+                          readOnly: true,
+                          onTap: () async {
+                            final result = await showSearch(
+                              context: context,
+                              delegate: DestinationSearchDelegate(),
+                            );
+                            if (result != null) {
+                              setModalState(() {
+                                cityCtrl.text = result['city'] ?? '';
+                                if (result['subdistrict'] != null) {
+                                  cityCtrl.text = '${result['subdistrict']}, ${result['type']} ${result['city']}';
+                                }
+                                provinceCtrl.text = result['province'] ?? '';
+                                cityId = int.tryParse(result['id'].toString());
+                                provinceId = int.tryParse(result['province_id']?.toString() ?? '');
+                              });
+                            }
+                          },
                           validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
                         ),
                         const SizedBox(height: 8),
@@ -318,7 +397,9 @@ class _AddressScreenState extends State<AddressScreen> {
                                   'phone': phoneCtrl.text,
                                   'address': addressCtrl.text,
                                   'city': cityCtrl.text,
+                                  'city_id': cityId,
                                   'province': provinceCtrl.text,
+                                  'province_id': provinceId,
                                   'postal_code': postalCtrl.text,
                                 });
 
