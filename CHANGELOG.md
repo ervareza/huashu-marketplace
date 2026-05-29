@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-05-29
+
+### Added
+- **API v3.0.0 Feature Complete**: Implementasi penuh dari seluruh endpoint baru pada API v3.0.0.
+- **Lupa & Reset Kata Sandi**: Integrasi form permintaan dan submit token OTP reset password di `forgot_password_screen.dart` dan `reset_password_screen.dart`.
+- **Manajemen Pengguna (Admin)**: Penambahan `admin_user_list_screen.dart` untuk melihat daftar pengguna, memblokir (*ban*), dan mengubah hak akses (*role*).
+- **Penyelesaian Komplain (Admin)**: Sinkronisasi endpoint `/api/admin/orders/:id/resolve-dispute` di detail pesanan Admin.
+- **Dashboard Penjual (Seller)**: Integrasi khusus penjual dengan endpoint `/api/seller/dashboard/stats` dan tombol navigasi dinamis terpisah dari Admin.
+- **Balas Ulasan (Seller)**: Penjual kini dapat memberikan tanggapan langsung pada ulasan pembeli di `product_detail_screen.dart`.
+
 ## [1.4.0] - 2026-05-28
 
 ### Added

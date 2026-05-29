@@ -15,6 +15,7 @@ import '../../order/presentation/cart_provider.dart';
 import '../../order/presentation/cart_screen.dart';
 import '../../order/presentation/order_history_screen.dart';
 import '../../auth/presentation/login_screen.dart';
+import '../../seller/presentation/seller_dashboard_screen.dart';
 
 class CatalogScreen extends StatefulWidget {
   const CatalogScreen({super.key});
@@ -300,26 +301,49 @@ class _CatalogScreenState extends State<CatalogScreen> {
               padding: EdgeInsets.symmetric(horizontal: 16),
               child: InkBrushDivider(height: 1),
             ),
-            ListTile(
-              leading: const Icon(Icons.palette_outlined, color: HuashuTheme.stainedCinnabarRed),
-              title: Text(
-                'Panel Penjual / Admin',
-                style: GoogleFonts.notoSerifSc(
-                  fontWeight: FontWeight.bold,
-                  color: HuashuTheme.stainedCinnabarRed,
+            if (_userRole == 'admin') ...[
+              ListTile(
+                leading: const Icon(Icons.shield_outlined, color: HuashuTheme.stainedCinnabarRed),
+                title: Text(
+                  'Panel Admin',
+                  style: GoogleFonts.notoSerifSc(
+                    fontWeight: FontWeight.bold,
+                    color: HuashuTheme.stainedCinnabarRed,
+                  ),
                 ),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const AdminPanelScreen()),
+                  );
+                },
               ),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const AdminPanelScreen()),
-                );
-              },
-            ),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: InkBrushDivider(height: 1),
-            ),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: InkBrushDivider(height: 1),
+              ),
+            ] else if (_userRole == 'seller') ...[
+              ListTile(
+                leading: const Icon(Icons.storefront_outlined, color: HuashuTheme.mineralJadeGreen),
+                title: Text(
+                  'Dashboard Penjual',
+                  style: GoogleFonts.notoSerifSc(
+                    fontWeight: FontWeight.bold,
+                    color: HuashuTheme.mineralJadeGreen,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const SellerDashboardScreen()),
+                  );
+                },
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: InkBrushDivider(height: 1),
+              ),
+            ],
             const Spacer(),
             const InkBrushDivider(height: 8),
             ListTile(

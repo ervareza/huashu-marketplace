@@ -6,6 +6,7 @@ import '../../../core/network/api_service.dart';
 import '../../product/presentation/seller_panel_screen.dart';
 import 'admin_order_list_screen.dart';
 import 'admin_content_screen.dart';
+import 'admin_user_list_screen.dart';
 
 class AdminPanelScreen extends StatefulWidget {
   const AdminPanelScreen({super.key});
@@ -142,6 +143,18 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(builder: (_) => const AdminContentScreen()),
+                    );
+                  },
+                ),
+                const SizedBox(height: HuashuTheme.space16),
+                _buildDashboardCard(
+                  context,
+                  title: 'Manajemen Pengguna',
+                  subtitle: 'Pantau seluruh pengguna, ubah hak akses (role), atau nonaktifkan (ban) akun yang melanggar.',
+                  icon: Icons.group_outlined,
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const AdminUserListScreen()),
                     );
                   },
                 ),

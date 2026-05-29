@@ -31,11 +31,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   List<dynamic> _reviews = [];
   bool _isLoadingReviews = true;
+  String? _currentUserId;
 
   @override
   void initState() {
     super.initState();
     _fetchReviews();
+    _loadUser();
+  }
+
+  Future<void> _loadUser() async {
+    final uid = await _api.secureStorage.read(key: 'user_id');
+    if (mounted) setState(() => _currentUserId = uid);
   }
 
   Future<void> _fetchReviews() async {
@@ -213,6 +220,60 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal menambah ulasan: $e')));
+      }
+    }
+  }
+
+  void _showReplyDialog(int reviewId) {
+    final replyCtrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: Text('Balas Ulasan', style: GoogleFonts.notoSerifSc(fontWeight: FontWeight.bold)),
+          content: TextField(
+            controller: replyCtrl,
+            decoration: const InputDecoration(
+              labelText: 'Tanggapan Penjual',
+              border: OutlineInputBorder(),
+            ),
+            maxLines: 3,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('BATAL'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: HuashuTheme.mineralJadeGreen),
+              onPressed: () async {
+                if (replyCtrl.text.trim().isEmpty) return;
+                Navigator.pop(ctx);
+                _submitReply(reviewId, replyCtrl.text.trim());
+              },
+              child: const Text('KIRIM'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _submitReply(int reviewId, String replyText) async {
+    try {
+      final response = await _api.dio.post(
+        '/api/products/${widget.product['id']}/reviews/$reviewId/reply',
+        data: {'reply': replyText},
+      );
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Balasan berhasil dikirim')));
+          _fetchReviews();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal membalas ulasan: $e')));
       }
     }
   }
@@ -440,7 +501,36 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                     fit: BoxFit.cover,
                                   ),
                                 ),
-                              ]
+                              ],
+                              
+                              if (review['seller_reply'] != null && review['seller_reply'].toString().isNotEmpty) ...[
+                                const SizedBox(height: 12),
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: HuashuTheme.mineralJadeGreen.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(4),
+                                    border: Border(left: BorderSide(color: HuashuTheme.mineralJadeGreen, width: 3)),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text('Balasan Penjual:', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 11, color: HuashuTheme.mineralJadeGreen)),
+                                      const SizedBox(height: 4),
+                                      Text(review['seller_reply'], style: GoogleFonts.inter(fontSize: 12)),
+                                    ],
+                                  ),
+                                ),
+                              ] else if (_currentUserId != null && widget.product['seller_id'] != null && _currentUserId == widget.product['seller_id'].toString()) ...[
+                                const SizedBox(height: 8),
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: TextButton(
+                                    onPressed: () => _showReplyDialog(review['id']),
+                                    child: const Text('Balas Ulasan', style: TextStyle(color: HuashuTheme.mineralJadeGreen, fontSize: 12)),
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                         );

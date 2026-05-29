@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/huashu_theme.dart';
 import '../../../core/network/api_service.dart';
 import 'register_screen.dart';
+import 'forgot_password_screen.dart';
 import '../../product/presentation/catalog_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -209,7 +210,27 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                     },
                   ),
 
-                  const SizedBox(height: HuashuTheme.space48),
+                  const SizedBox(height: HuashuTheme.space12),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
+                        );
+                      },
+                      child: Text(
+                        'Lupa Kata Sandi?',
+                        style: GoogleFonts.inter(
+                          color: HuashuTheme.charcoalBlack.withValues(alpha: 0.6),
+                          decoration: TextDecoration.underline,
+                          decorationColor: HuashuTheme.charcoalBlack.withValues(alpha: 0.3),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: HuashuTheme.space24),
 
                   // ─── Tombol Login ────────────────────────────
                   SizedBox(
