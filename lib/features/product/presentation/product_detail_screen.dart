@@ -496,36 +496,36 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         children: [
                           const Icon(Icons.storefront_outlined, color: HuashuTheme.mineralJadeGreen),
                           const SizedBox(width: HuashuTheme.space16),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const HuashuSectionLabel(text: 'Penjual Utama'),
-                              const SizedBox(height: HuashuTheme.space4),
-                              Text(
-                                p['seller']['name']?.toString() ?? 'Toko Seni',
-                                style: GoogleFonts.inter(
-                                  fontWeight: FontWeight.w600,
-                                  color: HuashuTheme.charcoalBlack,
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const HuashuSectionLabel(text: 'Penjual Utama'),
+                                const SizedBox(height: HuashuTheme.space4),
+                                Text(
+                                  p['seller']['name']?.toString() ?? 'Toko Seni',
+                                  style: GoogleFonts.inter(
+                                    fontWeight: FontWeight.w600,
+                                    color: HuashuTheme.charcoalBlack,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
+                          ),
+                          OutlinedButton.icon(
+                            onPressed: () => _chatSeller(),
+                            icon: const Icon(Icons.chat_bubble_outline, size: 18, color: HuashuTheme.mineralJadeGreen),
+                            label: Text(
+                              'Chat',
+                              style: GoogleFonts.inter(fontSize: 12, color: HuashuTheme.mineralJadeGreen, fontWeight: FontWeight.w600),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: HuashuTheme.mineralJadeGreen),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
                           ),
                         ],
-                      ),
-                      const Spacer(),
-                      // Chat Penjual button
-                      OutlinedButton.icon(
-                        onPressed: () => _chatSeller(),
-                        icon: const Icon(Icons.chat_bubble_outline, size: 18, color: HuashuTheme.mineralJadeGreen),
-                        label: Text(
-                          'Chat',
-                          style: GoogleFonts.inter(fontSize: 12, color: HuashuTheme.mineralJadeGreen, fontWeight: FontWeight.w600),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: HuashuTheme.mineralJadeGreen),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
                       ),
                     ),
                     const SizedBox(height: HuashuTheme.space24),

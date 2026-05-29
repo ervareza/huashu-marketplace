@@ -143,7 +143,6 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   Future<void> _sendProductEmbed(Map<String, dynamic> product) async {
     final name = product['name'] ?? '';
     final price = ApiService.formatPrice(ApiService.parsePrice(product['price']));
-    final productId = product['id'];
     final embedText = '🛒 Saya tertarik dengan produk ini:\n\n📦 $name\n💰 $price\n\nApakah masih tersedia?';
     
     setState(() => _isSending = true);
