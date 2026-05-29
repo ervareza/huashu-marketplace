@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.2] - 2026-05-29
+
+### Added
+- **Chat Penjual dengan Embed Produk**: Penambahan tombol "Chat" pada detail produk yang langsung menghubungkan ke penjual dengan card embed produk otomatis (gambar, nama, harga) di dalam chat room.
+- **Batasan Ulasan Produk (Review Gate)**: Pengguna kini hanya dapat memberikan ulasan pada produk yang telah dibeli (transaksi dengan status selesai/dikirim).
+- **Pesan / Chat di Sidebar**: Navigasi ke daftar obrolan (`ChatListScreen`) sekarang tersedia langsung di menu Drawer navigasi.
+
+### Changed
+- **Scrollable Banner**: Slider banner promo di halaman utama Katalog diubah dari melayang/sticky menjadi scrollable terintegrasi menggunakan `CustomScrollView` dan Slivers.
+
+## [1.7.1] - 2026-05-29
+
+### Fixed
+- **Build & Warning Cleanup**: Memperbaiki error kompilasi pada `auth_helper.dart` (`disconnect` -> `disposeSocket`), `catalog_screen.dart` (parameter warna `HuashuStampBadge`), dan menghapus impor yang tidak digunakan di beberapa file.
+- **Sesi Logout & Redirect Terpusat**: Memperbaiki redireksi logout agar terpusat dan sinkron menggunakan `AuthHelper.forceLogoutAndRedirect` tanpa masalah async gap.
+
+## [1.7.0] - 2026-05-29
+
+### Added
+- **Integrasi API RajaOngkir**: Menambahkan pencarian kota, pilihan kurir pengiriman (JNE, POS, TIKI), serta penghitungan biaya ongkos kirim (ongkir) otomatis pada saat checkout pesanan.
+
 ## [1.6.3] - 2026-05-29
 
 ### Changed
