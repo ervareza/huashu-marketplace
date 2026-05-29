@@ -9,18 +9,13 @@ import '../theme/huashu_theme.dart';
 final GlobalKey<NavigatorState> globalNavigatorKey = GlobalKey<NavigatorState>();
 
 class AuthHelper {
-  static Future<void> forceLogoutAndRedirect([String reason = '']) async {
-    const storage = FlutterSecureStorage();
-    await storage.deleteAll();
-    
-    // Clear Providers
-    CartProvider().clearLocal();
-    WishlistProvider().clearLocal();
-
-    // Disconnect Socket
-    GlobalSocketService().disposeSocket();
-
+  static void forceLogoutAndRedirect([String reason = '']) {
+    // Capture context synchronously BEFORE any async work
     final ctx = globalNavigatorKey.currentContext;
+
+    // Fire-and-forget the async cleanup
+    _cleanupSession();
+
     if (ctx == null) return;
 
     if (reason.isNotEmpty) {
@@ -35,5 +30,13 @@ class AuthHelper {
       MaterialPageRoute(builder: (_) => const LoginScreen()),
       (route) => false,
     );
+  }
+
+  static Future<void> _cleanupSession() async {
+    const storage = FlutterSecureStorage();
+    await storage.deleteAll();
+    CartProvider().clearLocal();
+    WishlistProvider().clearLocal();
+    GlobalSocketService().disposeSocket();
   }
 }

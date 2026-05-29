@@ -183,7 +183,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
 
     if (confirm == true) {
-      await AuthHelper.forceLogoutAndRedirect('Anda telah keluar.');
+      AuthHelper.forceLogoutAndRedirect('Anda telah keluar.');
     }
   }
 
@@ -211,7 +211,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       try {
         final response = await _api.dio.delete('/api/users/profile');
         if (response.statusCode == 200) {
-          await AuthHelper.forceLogoutAndRedirect('Akun berhasil dihapus');
+          AuthHelper.forceLogoutAndRedirect('Akun berhasil dihapus');
         }
       } catch (e) {
         if (mounted) {

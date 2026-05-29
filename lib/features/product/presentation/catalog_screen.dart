@@ -14,7 +14,7 @@ import '../../admin/presentation/admin_panel_screen.dart';
 import '../../order/presentation/cart_provider.dart';
 import '../../order/presentation/cart_screen.dart';
 import '../../order/presentation/order_history_screen.dart';
-import '../../auth/presentation/login_screen.dart';
+
 import '../../seller/presentation/seller_dashboard_screen.dart';
 import '../../../core/network/global_socket_service.dart';
 import '../../../core/network/auth_helper.dart';
@@ -200,7 +200,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
     );
 
     if (confirm == true) {
-      await AuthHelper.forceLogoutAndRedirect('Anda telah keluar.');
+      AuthHelper.forceLogoutAndRedirect('Anda telah keluar.');
     }
   }
 

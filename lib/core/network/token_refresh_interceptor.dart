@@ -67,7 +67,7 @@ class TokenRefreshInterceptor extends QueuedInterceptorsWrapper {
         }
       } catch (refreshError) {
         // Refresh gagal — hapus semua token dan paksa logout
-        await AuthHelper.forceLogoutAndRedirect('Sesi kedaluwarsa, silakan login kembali.');
+        AuthHelper.forceLogoutAndRedirect('Sesi kedaluwarsa, silakan login kembali.');
       }
     }
     return handler.next(err);
