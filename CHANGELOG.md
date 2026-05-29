@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.2] - 2026-05-29
+
+### Fixed
+- **Banner Images**: Gambar banner promo di halaman utama kini diproses melalui `sanitizeImageUrl` sehingga URL `localhost` dari API akan otomatis di-redirect ke domain server yang benar. Banner tanpa gambar (image_url kosong/null) kini disembunyikan sepenuhnya, bukan menampilkan kotak abu-abu.
+- **Admin User Avatar**: Avatar pengguna di halaman Manajemen Pengguna (Admin) kini menggunakan `sanitizeImageUrl` sehingga foto profil tampil dengan benar.
+- **Admin Ban Endpoint**: Perbaikan endpoint Ban/Unban pengguna agar sesuai dokumentasi API (toggle di `/api/admin/users/:id/ban`).
+- **Admin Role Values**: Perbaikan nilai role di dialog "Ubah Role" dari `user` menjadi `customer` sesuai spesifikasi API.
+
 ## [1.6.1] - 2026-05-29
 
 ### Fixed

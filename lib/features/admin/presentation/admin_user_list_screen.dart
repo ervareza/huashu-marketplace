@@ -51,8 +51,7 @@ class _AdminUserListScreenState extends State<AdminUserListScreen> {
 
   Future<void> _toggleBanStatus(int userId, bool currentStatus) async {
     try {
-      final action = currentStatus ? 'unban' : 'ban';
-      final response = await _api.dio.put('/api/admin/users/$userId/$action');
+      final response = await _api.dio.put('/api/admin/users/$userId/ban');
       if (response.statusCode == 200) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -98,7 +97,7 @@ class _AdminUserListScreenState extends State<AdminUserListScreen> {
           title: Text('Ubah Role Pengguna', style: GoogleFonts.notoSerifSc(fontWeight: FontWeight.bold)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
-            children: ['user', 'seller', 'admin'].map((role) {
+            children: ['customer', 'seller', 'admin'].map((role) {
               return RadioListTile<String>(
                 title: Text(role.toUpperCase()),
                 value: role,
@@ -149,7 +148,7 @@ class _AdminUserListScreenState extends State<AdminUserListScreen> {
                       return ListTile(
                         leading: CircleAvatar(
                           backgroundImage: user['avatar_url'] != null
-                              ? CachedNetworkImageProvider(user['avatar_url'])
+                              ? CachedNetworkImageProvider(ApiService.sanitizeImageUrl(user['avatar_url']))
                               : null,
                           backgroundColor: HuashuTheme.warmStone,
                           child: user['avatar_url'] == null ? const Icon(Icons.person, color: Colors.white) : null,

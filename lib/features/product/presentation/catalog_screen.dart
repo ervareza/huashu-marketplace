@@ -522,16 +522,17 @@ class _CatalogScreenState extends State<CatalogScreen> {
           const SizedBox(height: HuashuTheme.space12),
           
           // ─── Banners ──────────────────────────────────
-          if (_banners.isNotEmpty && (_searchQuery.isEmpty && (_selectedCategory == null || _selectedCategory == 'Semua'))) ...[
+          if (_banners.where((b) => (b['image_url'] ?? '').toString().isNotEmpty).isNotEmpty && (_searchQuery.isEmpty && (_selectedCategory == null || _selectedCategory == 'Semua'))) ...[
             SizedBox(
               height: 140,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: HuashuTheme.space24),
-                itemCount: _banners.length,
+                itemCount: _banners.where((b) => (b['image_url'] ?? '').toString().isNotEmpty).length,
                 itemBuilder: (context, index) {
-                  final banner = _banners[index];
-                  final imageUrl = banner['image_url'] ?? '';
+                  final validBanners = _banners.where((b) => (b['image_url'] ?? '').toString().isNotEmpty).toList();
+                  final banner = validBanners[index];
+                  final imageUrl = ApiService.sanitizeImageUrl(banner['image_url']?.toString());
                   return Container(
                     width: 280,
                     margin: const EdgeInsets.only(right: 16),
@@ -545,9 +546,9 @@ class _CatalogScreenState extends State<CatalogScreen> {
                           ? CachedNetworkImage(
                               imageUrl: imageUrl,
                               fit: BoxFit.cover,
-                              errorWidget: (_, __, ___) => Container(color: Colors.grey[200]),
+                              errorWidget: (_, __, ___) => const SizedBox.shrink(),
                             )
-                          : Container(color: Colors.grey[200]),
+                          : const SizedBox.shrink(),
                     ),
                   );
                 },
