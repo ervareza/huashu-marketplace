@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:dio/dio.dart';
 import '../../../core/theme/huashu_theme.dart';
 import '../../../core/network/api_service.dart';
+import '../../../core/network/global_socket_service.dart';
 import 'chat_room_screen.dart';
 
 class ChatListScreen extends StatefulWidget {
@@ -23,6 +24,20 @@ class _ChatListScreenState extends State<ChatListScreen> {
   void initState() {
     super.initState();
     _initData();
+    GlobalSocketService().addListener(_onGlobalSocketEvent);
+  }
+
+  @override
+  void dispose() {
+    GlobalSocketService().removeListener(_onGlobalSocketEvent);
+    super.dispose();
+  }
+
+  void _onGlobalSocketEvent() {
+    if (GlobalSocketService().hasUnreadChats) {
+      _fetchChats();
+      GlobalSocketService().markChatsAsRead();
+    }
   }
 
   Future<void> _initData() async {

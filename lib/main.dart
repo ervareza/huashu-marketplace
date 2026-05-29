@@ -3,6 +3,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'core/theme/huashu_theme.dart';
 import 'features/auth/presentation/login_screen.dart';
 import 'features/product/presentation/catalog_screen.dart';
+import 'core/network/global_socket_service.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -43,6 +44,9 @@ class _SessionCheckScreenState extends State<SessionCheckScreen> {
 
   Future<void> _checkSession() async {
     final token = await _secureStorage.read(key: 'access_token');
+    if (token != null) {
+      await GlobalSocketService().initSocket();
+    }
     setState(() {
       _hasSession = token != null;
       _checking = false;

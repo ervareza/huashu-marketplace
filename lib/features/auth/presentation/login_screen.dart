@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/huashu_theme.dart';
 import '../../../core/network/api_service.dart';
+import '../../../core/network/global_socket_service.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
 import '../../product/presentation/catalog_screen.dart';
@@ -75,6 +76,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           await _api.secureStorage.write(key: 'user_id', value: userId);
           await _api.secureStorage.write(key: 'user_name', value: userName);
           await _api.secureStorage.write(key: 'user_role', value: userRole);
+
+          await GlobalSocketService().initSocket();
 
           if (mounted) {
             Navigator.of(context).pushAndRemoveUntil(

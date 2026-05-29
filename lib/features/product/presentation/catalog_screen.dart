@@ -16,6 +16,7 @@ import '../../order/presentation/cart_screen.dart';
 import '../../order/presentation/order_history_screen.dart';
 import '../../auth/presentation/login_screen.dart';
 import '../../seller/presentation/seller_dashboard_screen.dart';
+import '../../../core/network/global_socket_service.dart';
 
 class CatalogScreen extends StatefulWidget {
   const CatalogScreen({super.key});
@@ -200,6 +201,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
     if (confirm == true) {
       await _api.secureStorage.deleteAll();
       CartProvider().clearLocal();
+      GlobalSocketService().disposeSocket();
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const LoginScreen()),
@@ -378,33 +380,39 @@ class _CatalogScreenState extends State<CatalogScreen> {
             },
           ),
           // ─── Notification Icon ─────────────
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.notifications_none),
-                tooltip: 'Notifikasi',
-                onPressed: () async {
-                  await Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const NotificationScreen()),
-                  );
-                  _checkUnreadNotif(); // Cek lagi setelah kembali
-                },
-              ),
-              if (_hasUnreadNotif)
-                Positioned(
-                  right: 12,
-                  top: 12,
-                  child: Container(
-                    width: 10,
-                    height: 10,
-                    decoration: const BoxDecoration(
-                      color: HuashuTheme.stainedCinnabarRed,
-                      shape: BoxShape.circle,
-                    ),
+          AnimatedBuilder(
+            animation: GlobalSocketService(),
+            builder: (context, _) {
+              return Stack(
+                alignment: Alignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.notifications_none),
+                    tooltip: 'Notifikasi',
+                    onPressed: () async {
+                      await Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const NotificationScreen()),
+                      );
+                      GlobalSocketService().markNotificationsAsRead();
+                      _checkUnreadNotif(); // Cek lagi setelah kembali
+                    },
                   ),
-                ),
-            ],
+                  if (_hasUnreadNotif || GlobalSocketService().hasUnreadNotifications)
+                    Positioned(
+                      right: 12,
+                      top: 12,
+                      child: Container(
+                        width: 10,
+                        height: 10,
+                        decoration: const BoxDecoration(
+                          color: HuashuTheme.stainedCinnabarRed,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
           ),
           
           // ─── Wishlist Icon ─────────────

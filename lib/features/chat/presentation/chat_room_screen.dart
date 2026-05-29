@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import '../../../core/theme/huashu_theme.dart';
 import '../../../core/network/api_service.dart';
+import '../../../core/network/global_socket_service.dart';
 
 class ChatRoomScreen extends StatefulWidget {
   final int roomId;
@@ -31,7 +32,6 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   bool _isSending = false;
 
   io.Socket? _socket;
-  String? _token;
 
   @override
   void initState() {
@@ -40,45 +40,30 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   }
 
   Future<void> _initChat() async {
-    _token = await _api.secureStorage.read(key: 'access_token');
     await _fetchMessages();
     _connectSocket();
   }
 
-  void _connectSocket() {
-    if (_token == null) return;
-
-    try {
-      // Menghubungkan Socket.io
-      _socket = io.io(_api.dio.options.baseUrl, <String, dynamic>{
-        'transports': ['websocket'],
-        'autoConnect': false,
-        'extraHeaders': {'Authorization': 'Bearer $_token'}
-      });
-
-      _socket?.connect();
-
-      _socket?.onConnect((_) {
-        debugPrint('Socket connected. Joining room ${widget.roomId}');
-        _socket?.emit('join_room', widget.roomId);
-      });
-
-      _socket?.on('new_message', (data) {
-        if (mounted) {
-          setState(() {
-            // Cek apakah pesan sudah ada (mungkin via REST response)
-            final exists = _messages.any((m) => m['id'] == data['id']);
-            if (!exists) {
-              _messages.add(data);
-            }
-          });
-          _scrollToBottom();
+  void _handleNewMessage(dynamic data) {
+    if (mounted) {
+      setState(() {
+        final exists = _messages.any((m) => m['id'] == data['id']);
+        if (!exists) {
+          _messages.add(data);
         }
       });
-      
-      _socket?.onDisconnect((_) => debugPrint('Socket disconnected'));
-    } catch (e) {
-      debugPrint('Error connecting socket: $e');
+      _scrollToBottom();
+      GlobalSocketService().markChatsAsRead(); // Tandai dibaca karena kita sedang di room
+    }
+  }
+
+  void _connectSocket() {
+    _socket = GlobalSocketService().socket;
+    if (_socket != null) {
+      _socket!.emit('join_room', widget.roomId);
+      _socket!.on('new_message', _handleNewMessage);
+    } else {
+      debugPrint('Global socket is null');
     }
   }
 
@@ -160,8 +145,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   @override
   void dispose() {
-    _socket?.disconnect();
-    _socket?.dispose();
+    _socket?.off('new_message', _handleNewMessage);
     _msgController.dispose();
     _scrollController.dispose();
     super.dispose();

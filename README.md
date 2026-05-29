@@ -27,14 +27,18 @@ Aplikasi ini dibangun menggunakan **Flutter** untuk antarmuka lintas platform (A
 - **Promo Banners & Flash Sales**: Komidi putar (carousel) *banner* interaktif dan hitung mundur Flash Sale secara *real-time*.
 - **Keranjang & Wishlist**: Manajemen keranjang belanja dan fitur *Wishlist* dengan integrasi state provider terpusat.
 - **Sistem Voucher**: Klaim kode promo dan terapkan saat *Checkout* untuk mendapatkan diskon langsung.
-- **Real-time Chat (Socket.IO)**: Mengobrol langsung dengan penjual layaknya aplikasi *chatting* sungguhan.
+- **Real-time Chat (Socket.IO)**: Mengobrol langsung dengan penjual layaknya aplikasi *chatting* sungguhan. Terhubung secara global untuk update instan di seluruh layar.
 - **Pembayaran Aman (Midtrans)**: Beli produk melalui WebView Snap Midtrans (Virtual Account, GoPay, Kartu Kredit).
-- **Notifikasi & Riwayat Pesanan**: Lacak pesanan secara komprehensif dari "Diproses", "Dikirim", hingga "Selesai".
+- **Notifikasi & Deep Linking**: Lacak pesanan secara komprehensif. Lonceng notifikasi menyala *real-time*, dan ketukan pada pesan akan otomatis membawa Anda ke layar detail terkait (*Deep Linking*).
 - **Resolusi Sengketa (Disputes)**: Ajukan komplain jika pesanan tidak sesuai, dilengkapi *upload* bukti keluhan.
+- **Autentikasi Canggih**: Dukungan registrasi, pemulihan lupa sandi (OTP Email), dan refresh token cerdas di latar belakang.
 
 ### 🏪 Untuk Penjual / Admin
-- **Panel Dashboard Eksklusif**: Pantau seluruh pesanan, pendapatan, dan katalog dari satu layar yang elegan.
-- **Manajemen Pesanan (Order Management)**: Ubah status pesanan (Kirim Resi Pengiriman) secara langsung dari aplikasi.
+- **Panel Dashboard Eksklusif (Seller/Admin)**: Tampilan manajemen terpisah. Pantau seluruh pesanan, pendapatan, produk terlaris dari satu layar elegan.
+- **Manajemen Pesanan & Resi**: Ubah status pesanan dan kirim resi pelacakan kurir langsung dari aplikasi.
+- **Balas Ulasan (Seller)**: Seller dapat membalas ulasan pembeli, yang akan langsung termuat di layar Detail Produk.
+- **Manajemen Pengguna (Admin)**: Blokir pengguna (*banned*), ganti *role* dari pembeli ke penjual, dan putus sengketa *dispute* secara adil.
+- **Manajemen Konten (Admin)**: Buat Banner Promo dan Kategori baru dengan antarmuka dinamis.
 - **Manajemen Produk (CRUD)**: Unggah produk baru, kelola stok, dan hapus katalog usang dengan mudah (*mock uploader* terintegrasi).
 
 ---

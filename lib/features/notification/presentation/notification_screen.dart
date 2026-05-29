@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/huashu_theme.dart';
 import '../../../core/network/api_service.dart';
+import '../../order/presentation/order_detail_screen.dart';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
@@ -149,10 +150,35 @@ class _NotificationScreenState extends State<NotificationScreen> {
                               ),
                             ],
                           ),
-                          onTap: () {
+                          onTap: () async {
+                            final nav = Navigator.of(context);
                             if (!isRead) {
-                              // Ideally we mark this specific one as read
-                              // For simplicity in UI, we fetch again or assume read
+                              try {
+                                await _api.dio.put('/api/notifications/${notif['id']}/read');
+                                setState(() {
+                                  notif['is_read'] = true;
+                                });
+                              } catch (e) {
+                                debugPrint("Gagal mark as read: $e");
+                              }
+                            }
+                            
+                            // Deep Linking
+                            final type = notif['type'];
+                            final refId = notif['reference_id'];
+                            
+                            if (type == 'order_status' && refId != null) {
+                              nav.push(MaterialPageRoute(
+                                builder: (_) => OrderDetailScreen(orderId: refId)
+                              ));
+                            } else if (type == 'chat' && refId != null) {
+                              // We don't have otherUserName easily available, but we can just go to chat list
+                              // or pass a placeholder. Passing placeholder is not ideal, so we go to Chat List.
+                              nav.pop(); // close notification screen
+                            } else if (type == 'dispute' && refId != null) {
+                              nav.push(MaterialPageRoute(
+                                builder: (_) => OrderDetailScreen(orderId: refId)
+                              ));
                             }
                           },
                         ),
