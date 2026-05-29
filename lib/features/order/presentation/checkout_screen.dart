@@ -8,6 +8,7 @@ import 'cart_provider.dart';
 import '../../payment/presentation/snap_webview.dart';
 import '../../profile/presentation/address_screen.dart';
 import 'voucher_screen.dart';
+import 'order_detail_screen.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
@@ -181,9 +182,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           return;
         }
       }
-      _showError('Gagal memproses pembayaran.');
+      
+      if (mounted) {
+        CartProvider().clearLocal();
+        CartProvider().fetchCart();
+        _showError('Gagal memproses link pembayaran. Anda dapat melanjutkannya di Detail Pesanan.');
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => OrderDetailScreen(orderId: orderId),
+          ),
+        );
+      }
     } on DioException catch (e) {
-      _showError(ApiService.extractErrorMessage(e));
+      if (mounted) _showError(ApiService.extractErrorMessage(e));
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }

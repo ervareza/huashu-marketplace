@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.1] - 2026-05-29
+
+### Fixed
+- **Order Duplication**: Memperbaiki issue kritikal di mana user tetap berada di layar checkout dan berpotensi mencetak pesanan duplikat jika API pembayaran gagal diproses.
+- **State Leak on Logout**: Provider `CartProvider` dan `WishlistProvider` kini dibersihkan dari memory lokal (`clearLocal`) saat user melakukan proses Logout atau Hapus Akun, mencegah kebocoran data sesi ke login berikutnya.
+
+### Changed
+- **Payment Redirect Flow**: Tombol "Kembali Ke Beranda" setelah hasil transaksi (Snap WebView) diubah menjadi "Lihat Detail Pesanan" agar user dapat langsung memantau status transaksinya di halaman `OrderDetailScreen`.
+- **Chat Deep-Linking**: Notifikasi obrolan (*chat*) kini langsung menavigasi user ke daftar pesan (`ChatListScreen`) daripada hanya sekadar menutup dialog.
+
 ## [1.6.0] - 2026-05-29
 
 ### Added

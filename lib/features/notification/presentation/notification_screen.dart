@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../core/theme/huashu_theme.dart';
 import '../../../core/network/api_service.dart';
 import '../../order/presentation/order_detail_screen.dart';
+import '../../chat/presentation/chat_list_screen.dart';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
@@ -172,9 +173,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                 builder: (_) => OrderDetailScreen(orderId: refId)
                               ));
                             } else if (type == 'chat' && refId != null) {
-                              // We don't have otherUserName easily available, but we can just go to chat list
-                              // or pass a placeholder. Passing placeholder is not ideal, so we go to Chat List.
-                              nav.pop(); // close notification screen
+                              nav.pushReplacement(MaterialPageRoute(
+                                builder: (_) => const ChatListScreen()
+                              ));
                             } else if (type == 'dispute' && refId != null) {
                               nav.push(MaterialPageRoute(
                                 builder: (_) => OrderDetailScreen(orderId: refId)

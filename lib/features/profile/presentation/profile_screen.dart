@@ -12,6 +12,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../auth/presentation/login_screen.dart';
 import '../../chat/presentation/chat_list_screen.dart';
 import '../../order/presentation/voucher_screen.dart';
+import '../../order/presentation/cart_provider.dart';
+import '../../product/presentation/wishlist_provider.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -183,6 +185,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
 
     if (confirm == true) {
+      CartProvider().clearLocal();
+      WishlistProvider().clearLocal();
       await _api.secureStorage.deleteAll();
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
@@ -217,6 +221,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       try {
         final response = await _api.dio.delete('/api/users/profile');
         if (response.statusCode == 200) {
+          CartProvider().clearLocal();
+          WishlistProvider().clearLocal();
           await _api.secureStorage.deleteAll();
           if (mounted) {
             Navigator.of(context).pushAndRemoveUntil(

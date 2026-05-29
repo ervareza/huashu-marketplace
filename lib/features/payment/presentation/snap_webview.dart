@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/huashu_theme.dart';
-import '../../product/presentation/catalog_screen.dart';
+import '../../order/presentation/order_detail_screen.dart';
 
 class SnapWebView extends StatefulWidget {
   final String redirectUrl;
@@ -170,12 +170,11 @@ class TransactionResultScreen extends StatelessWidget {
                     backgroundColor: themeColor,
                   ),
                   onPressed: () {
-                    Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(builder: (_) => const CatalogScreen()),
-                      (route) => false,
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(builder: (_) => OrderDetailScreen(orderId: orderId)),
                     );
                   },
-                  child: const Text('KEMBALI KE BERANDA'),
+                  child: const Text('LIHAT DETAIL PESANAN'),
                 ),
               ),
             ],
