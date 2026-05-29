@@ -6,15 +6,18 @@ import 'package:socket_io_client/socket_io_client.dart' as io;
 import '../../../core/theme/huashu_theme.dart';
 import '../../../core/network/api_service.dart';
 import '../../../core/network/global_socket_service.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class ChatRoomScreen extends StatefulWidget {
   final int roomId;
   final String otherUserName;
+  final Map<String, dynamic>? initialProduct;
   
   const ChatRoomScreen({
     super.key,
     required this.roomId,
     required this.otherUserName,
+    this.initialProduct,
   });
 
   @override
@@ -42,6 +45,10 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   Future<void> _initChat() async {
     await _fetchMessages();
     _connectSocket();
+    // Auto-send product embed if opening from product detail
+    if (widget.initialProduct != null && _messages.isEmpty) {
+      _sendProductEmbed(widget.initialProduct!);
+    }
   }
 
   void _handleNewMessage(dynamic data) {
@@ -133,6 +140,30 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     }
   }
 
+  Future<void> _sendProductEmbed(Map<String, dynamic> product) async {
+    final name = product['name'] ?? '';
+    final price = ApiService.formatPrice(ApiService.parsePrice(product['price']));
+    final productId = product['id'];
+    final embedText = '🛒 Saya tertarik dengan produk ini:\n\n📦 $name\n💰 $price\n\nApakah masih tersedia?';
+    
+    setState(() => _isSending = true);
+    try {
+      final response = await _api.dio.post(
+        '/api/chats/${widget.roomId}/messages',
+        data: {'content': embedText},
+      );
+      if (response.statusCode == 201 && response.data['success'] == true) {
+        final realMsg = response.data['data'];
+        setState(() => _messages.add(realMsg));
+        _scrollToBottom();
+      }
+    } catch (e) {
+      debugPrint('Gagal kirim product embed: $e');
+    } finally {
+      if (mounted) setState(() => _isSending = false);
+    }
+  }
+
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
       _scrollController.animateTo(
@@ -159,6 +190,54 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       ),
       body: Column(
         children: [
+          // ─── Product Embed Card (if opened from product detail) ─────
+          if (widget.initialProduct != null)
+            Container(
+              margin: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: HuashuTheme.warmStone.withValues(alpha: 0.2),
+                border: Border.all(color: HuashuTheme.lightInkLine),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: CachedNetworkImage(
+                      imageUrl: ApiService.sanitizeImageUrl(widget.initialProduct!['image_url']?.toString()),
+                      width: 50,
+                      height: 50,
+                      fit: BoxFit.cover,
+                      errorWidget: (_, __, ___) => Container(
+                        width: 50, height: 50,
+                        color: HuashuTheme.warmStone,
+                        child: const Icon(Icons.image, size: 24),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.initialProduct!['name']?.toString() ?? '',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          ApiService.formatPrice(ApiService.parsePrice(widget.initialProduct!['price'])),
+                          style: GoogleFonts.notoSerifSc(color: HuashuTheme.stainedCinnabarRed, fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator(color: HuashuTheme.mineralJadeGreen))

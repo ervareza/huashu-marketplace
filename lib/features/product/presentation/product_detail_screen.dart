@@ -9,6 +9,7 @@ import '../../../core/theme/huashu_theme.dart';
 import '../../../core/theme/ink_brush_divider.dart';
 import '../../../core/network/api_service.dart';
 import '../../order/presentation/cart_provider.dart';
+import '../../chat/presentation/chat_room_screen.dart';
 import 'wishlist_provider.dart';
 
 class ProductDetailScreen extends StatefulWidget {
@@ -103,6 +104,45 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       }
     } catch (e) {
       debugPrint("Gagal cek purchase: $e");
+    }
+  }
+
+  Future<void> _chatSeller() async {
+    final sellerId = _product['seller_id'] ?? _product['seller']?['id'];
+    if (sellerId == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Info penjual tidak tersedia'), backgroundColor: HuashuTheme.stainedCinnabarRed),
+        );
+      }
+      return;
+    }
+
+    try {
+      final response = await _api.dio.post('/api/chats/start', data: {'target_user_id': sellerId});
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        final room = response.data['data'];
+        final roomId = room['id'];
+        final sellerName = _product['seller']?['name']?.toString() ?? 'Penjual';
+        if (mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ChatRoomScreen(
+                roomId: roomId,
+                otherUserName: sellerName,
+                initialProduct: _product,
+              ),
+            ),
+          );
+        }
+      }
+    } on DioException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(ApiService.extractErrorMessage(e)), backgroundColor: HuashuTheme.stainedCinnabarRed),
+        );
+      }
     }
   }
 
@@ -471,6 +511,21 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             ],
                           ),
                         ],
+                      ),
+                      const Spacer(),
+                      // Chat Penjual button
+                      OutlinedButton.icon(
+                        onPressed: () => _chatSeller(),
+                        icon: const Icon(Icons.chat_bubble_outline, size: 18, color: HuashuTheme.mineralJadeGreen),
+                        label: Text(
+                          'Chat',
+                          style: GoogleFonts.inter(fontSize: 12, color: HuashuTheme.mineralJadeGreen, fontWeight: FontWeight.w600),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: HuashuTheme.mineralJadeGreen),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
                       ),
                     ),
                     const SizedBox(height: HuashuTheme.space24),
