@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] - 2026-05-29
+
+### Added
+- **Image Cropper 1:1**: Foto profil kini dipotong menjadi rasio 1:1 (square) sebelum di-upload menggunakan library `image_cropper`. Tampilan crop UI native Android/iOS dengan toolbar Huashu theme.
+- **Validasi Ukuran Avatar 2MB**: Foto profil yang melebihi 2MB akan ditolak dengan pesan error sebelum upload.
+- **Seller Dashboard CTA**: Halaman Dashboard Penjual menampilkan CTA "Mulai Berjualan!" dengan tombol aksi ketika user belum memiliki produk.
+
+### Changed
+- **Multi-Role Unified (Customer = Seller)**: Sesuai dokumentasi API, semua user `customer` kini bisa mengakses fitur penjual (Dashboard Penjual, Panel Produk) tanpa perlu role `seller` terpisah. Menu "Dashboard Penjual" muncul di sidebar untuk semua user.
+- **Sidebar Role Label**: Label role di drawer header berubah dari "PEMBELI" menjadi "PEMBELI & PENJUAL" untuk customer, dan "ADMINISTRATOR" untuk admin.
+- **Panel Produk Title**: Judul halaman Panel Produk berubah dari "PANEL PENJUAL / ADMIN" menjadi "KELOLA PRODUK SAYA".
+- **Profile Edit Hint**: Menambahkan hint "Maks. 2MB · Dipotong 1:1" di bawah avatar picker.
+
 ## [1.6.3] - 2026-05-29
 
 ### Changed

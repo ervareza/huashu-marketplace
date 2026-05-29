@@ -70,6 +70,49 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                       child: CircularProgressIndicator(color: HuashuTheme.mineralJadeGreen),
                     ),
                   )
+                else if (_stats == null || (_stats!['total_products'] ?? 0) == 0)
+                  // CTA: belum punya produk
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: HuashuTheme.lightInkLine),
+                      borderRadius: BorderRadius.circular(8),
+                      color: HuashuTheme.warmStone.withValues(alpha: 0.3),
+                    ),
+                    child: Column(
+                      children: [
+                        const Icon(Icons.storefront_outlined, size: 48, color: HuashuTheme.mineralJadeGreen),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Mulai Berjualan!',
+                          style: GoogleFonts.notoSerifSc(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Anda belum memiliki produk. Tambahkan produk pertama Anda dan mulai berjualan di HUASHU.',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.inter(fontSize: 13, color: HuashuTheme.charcoalBlack.withValues(alpha: 0.6)),
+                        ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            icon: const Icon(Icons.add),
+                            label: const Text('TAMBAH PRODUK'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: HuashuTheme.mineralJadeGreen,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(builder: (_) => const SellerPanelScreen()),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
                 else if (_stats != null) ...[
                   // ─── Grid Statistik ─────────────────────
                   GridView.count(

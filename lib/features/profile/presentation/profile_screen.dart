@@ -8,6 +8,7 @@ import 'address_screen.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:dio/dio.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../chat/presentation/chat_list_screen.dart';
@@ -81,8 +82,48 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         onTap: () async {
                           final picker = ImagePicker();
                           final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-                          if (pickedFile != null) {
-                            setModalState(() => avatarFile = pickedFile);
+                          if (pickedFile == null) return;
+
+                          // Validasi ukuran file max 2MB
+                          final fileSize = await pickedFile.length();
+                          if (fileSize > 2 * 1024 * 1024) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Ukuran foto maksimal 2MB. Silakan pilih foto lain.'),
+                                  backgroundColor: HuashuTheme.stainedCinnabarRed,
+                                ),
+                              );
+                            }
+                            return;
+                          }
+
+                          // Crop 1:1 (square)
+                          final croppedFile = await ImageCropper().cropImage(
+                            sourcePath: pickedFile.path,
+                            aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+                            compressQuality: 85,
+                            maxWidth: 512,
+                            maxHeight: 512,
+                            uiSettings: [
+                              AndroidUiSettings(
+                                toolbarTitle: 'Potong Foto Profil',
+                                toolbarColor: HuashuTheme.charcoalBlack,
+                                toolbarWidgetColor: Colors.white,
+                                activeControlsWidgetColor: HuashuTheme.mineralJadeGreen,
+                                initAspectRatio: CropAspectRatioPreset.square,
+                                lockAspectRatio: true,
+                              ),
+                              IOSUiSettings(
+                                title: 'Potong Foto Profil',
+                                aspectRatioLockEnabled: true,
+                                resetAspectRatioEnabled: false,
+                              ),
+                            ],
+                          );
+
+                          if (croppedFile != null) {
+                            setModalState(() => avatarFile = XFile(croppedFile.path));
                           }
                         },
                         child: CircleAvatar(
@@ -96,6 +137,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               : null,
                         ),
                       ),
+                      const SizedBox(height: 4),
+                      Text('Maks. 2MB · Dipotong 1:1', style: GoogleFonts.inter(fontSize: 11, color: HuashuTheme.warmStone)),
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: nameCtrl,

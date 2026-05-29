@@ -244,7 +244,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                               ),
                             ),
                             Text(
-                              _userRole == 'seller' ? 'PENJUAL' : 'PEMBELI',
+                              _userRole == 'admin' ? 'ADMINISTRATOR' : 'PEMBELI & PENJUAL',
                               style: GoogleFonts.notoSerifSc(
                                 color: HuashuTheme.stainedCinnabarRed,
                                 fontSize: 11,
@@ -332,28 +332,29 @@ class _CatalogScreenState extends State<CatalogScreen> {
                 padding: EdgeInsets.symmetric(horizontal: 16),
                 child: InkBrushDivider(height: 1),
               ),
-            ] else if (_userRole == 'seller') ...[
-              ListTile(
-                leading: const Icon(Icons.storefront_outlined, color: HuashuTheme.mineralJadeGreen),
-                title: Text(
-                  'Dashboard Penjual',
-                  style: GoogleFonts.notoSerifSc(
-                    fontWeight: FontWeight.bold,
-                    color: HuashuTheme.mineralJadeGreen,
-                  ),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const SellerDashboardScreen()),
-                  );
-                },
-              ),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: InkBrushDivider(height: 1),
-              ),
             ],
+            // Semua user (customer & admin) bisa akses dashboard penjual
+            // Sesuai API: "Tidak ada role seller terpisah. Semua customer bisa berjualan."
+            ListTile(
+              leading: const Icon(Icons.storefront_outlined, color: HuashuTheme.mineralJadeGreen),
+              title: Text(
+                'Dashboard Penjual',
+                style: GoogleFonts.notoSerifSc(
+                  fontWeight: FontWeight.bold,
+                  color: HuashuTheme.mineralJadeGreen,
+                ),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const SellerDashboardScreen()),
+                );
+              },
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: InkBrushDivider(height: 1),
+            ),
             const Spacer(),
             const InkBrushDivider(height: 8),
             ListTile(

@@ -405,7 +405,7 @@ class _SellerPanelScreenState extends State<SellerPanelScreen> with SingleTicker
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'PANEL PENJUAL / ADMIN',
+          'KELOLA PRODUK SAYA',
           style: GoogleFonts.notoSerifSc(
             fontSize: 16,
             fontWeight: FontWeight.bold,
