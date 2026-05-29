@@ -16,6 +16,7 @@ import '../../order/presentation/cart_screen.dart';
 import '../../order/presentation/order_history_screen.dart';
 
 import '../../seller/presentation/seller_dashboard_screen.dart';
+import '../../chat/presentation/chat_list_screen.dart';
 import '../../../core/network/global_socket_service.dart';
 import '../../../core/network/auth_helper.dart';
 
@@ -296,6 +297,20 @@ class _CatalogScreenState extends State<CatalogScreen> {
               padding: EdgeInsets.symmetric(horizontal: 16),
               child: InkBrushDivider(height: 1),
             ),
+            ListTile(
+              leading: const Icon(Icons.chat_bubble_outline, color: HuashuTheme.charcoalBlack),
+              title: Text('Pesan / Chat', style: GoogleFonts.notoSerifSc(fontWeight: FontWeight.bold)),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const ChatListScreen()),
+                );
+              },
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: InkBrushDivider(height: 1),
+            ),
             if (_userRole == 'admin') ...[
               ListTile(
                 leading: const Icon(Icons.shield_outlined, color: HuashuTheme.stainedCinnabarRed),
@@ -363,15 +378,6 @@ class _CatalogScreenState extends State<CatalogScreen> {
           ),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.history_edu),
-            tooltip: 'Riwayat Pesanan',
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const OrderHistoryScreen()),
-              );
-            },
-          ),
           // ─── Notification Icon ─────────────
           AnimatedBuilder(
             animation: GlobalSocketService(),
@@ -435,231 +441,249 @@ class _CatalogScreenState extends State<CatalogScreen> {
           const SizedBox(width: HuashuTheme.space8),
         ],
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+      body: CustomScrollView(
+        slivers: [
           // ─── Kolom Pencarian ───────────────────────────
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: HuashuTheme.space24,
-              vertical: HuashuTheme.space12,
-            ),
-            child: TextField(
-              onSubmitted: (val) {
-                setState(() => _searchQuery = val);
-                _fetchProducts();
-              },
-              decoration: InputDecoration(
-                hintText: 'Cari barang seni / produk...',
-                prefixIcon: const Icon(Icons.search, color: HuashuTheme.warmStone),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.search, color: HuashuTheme.mineralJadeGreen),
-                  onPressed: () {
-                    FocusScope.of(context).unfocus();
-                    _fetchProducts();
-                  },
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: HuashuTheme.space24,
+                vertical: HuashuTheme.space12,
+              ),
+              child: TextField(
+                onSubmitted: (val) {
+                  setState(() => _searchQuery = val);
+                  _fetchProducts();
+                },
+                decoration: InputDecoration(
+                  hintText: 'Cari barang seni / produk...',
+                  prefixIcon: const Icon(Icons.search, color: HuashuTheme.warmStone),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.search, color: HuashuTheme.mineralJadeGreen),
+                    onPressed: () {
+                      FocusScope.of(context).unfocus();
+                      _fetchProducts();
+                    },
+                  ),
                 ),
               ),
             ),
           ),
 
           // ─── Kategori Horizontal ──────────────────────
-          SizedBox(
-            height: 44,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: HuashuTheme.space24),
-              itemCount: _categories.length,
-              itemBuilder: (context, index) {
-                final catMap = _categories[index];
-                final catName = catMap['name']?.toString() ?? 'Semua';
-                final isSelected = _selectedCategory == catName || (_selectedCategory == null && catName == 'Semua');
-                return Padding(
-                  padding: const EdgeInsets.only(right: HuashuTheme.space12),
-                  child: ChoiceChip(
-                    label: Text(
-                      catName,
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        letterSpacing: 0.5,
-                        color: isSelected ? HuashuTheme.xuanPaperBg : HuashuTheme.charcoalBlack,
-                      ),
-                    ),
-                    selected: isSelected,
-                    onSelected: (_) {
-                      setState(() => _selectedCategory = catName);
-                      _fetchProducts();
-                    },
-                  ),
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: HuashuTheme.space12),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: HuashuTheme.space24),
-            child: InkBrushDivider(height: 1.5),
-          ),
-          const SizedBox(height: HuashuTheme.space12),
-          
-          // ─── Banners ──────────────────────────────────
-          if (_banners.where((b) => (b['image_url'] ?? '').toString().isNotEmpty).isNotEmpty && (_searchQuery.isEmpty && (_selectedCategory == null || _selectedCategory == 'Semua'))) ...[
-            Builder(builder: (context) {
-              final validBanners = _banners.where((b) => (b['image_url'] ?? '').toString().isNotEmpty).toList();
-              return SizedBox(
-                height: 160,
-                child: PageView.builder(
-                  controller: PageController(viewportFraction: 0.9),
-                  itemCount: validBanners.length,
-                  itemBuilder: (context, index) {
-                    final banner = validBanners[index];
-                    final imageUrl = ApiService.sanitizeImageUrl(banner['image_url']?.toString());
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(color: HuashuTheme.lightInkLine),
-                        ),
-                        child: ClipRect(
-                          child: imageUrl.isNotEmpty
-                              ? CachedNetworkImage(
-                                  imageUrl: imageUrl,
-                                  fit: BoxFit.cover,
-                                  width: double.infinity,
-                                  height: double.infinity,
-                                  errorWidget: (_, __, ___) => const Center(
-                                    child: Icon(Icons.broken_image_outlined, color: HuashuTheme.warmStone, size: 40),
-                                  ),
-                                )
-                              : const SizedBox.shrink(),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              );
-            }),
-            const SizedBox(height: HuashuTheme.space12),
-          ],
-          
-          if (_flashSales.isNotEmpty && (_searchQuery.isEmpty && (_selectedCategory == null || _selectedCategory == 'Semua'))) ...[
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: HuashuTheme.space24, vertical: HuashuTheme.space12),
-              child: Row(
-                children: [
-                  const Icon(Icons.flash_on, color: HuashuTheme.stainedCinnabarRed),
-                  const SizedBox(width: 8),
-                  Text(
-                    'FLASH SALE BERAKHIR DALAM 02:45:10',
-                    style: GoogleFonts.notoSerifSc(fontWeight: FontWeight.bold, color: HuashuTheme.stainedCinnabarRed, fontSize: 14),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(
-              height: 160,
+          SliverToBoxAdapter(
+            child: SizedBox(
+              height: 44,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: HuashuTheme.space24),
-                itemCount: _flashSales.length,
+                itemCount: _categories.length,
                 itemBuilder: (context, index) {
-                  final sale = _flashSales[index];
-                  final product = sale['Product'] ?? sale;
-                  final price = ApiService.parsePrice(product['price']);
-                  final discountPrice = sale['discount_price'] != null ? ApiService.parsePrice(sale['discount_price']) : price * 0.8;
-                  
-                  return GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => ProductDetailScreen(product: product, priceDouble: discountPrice)),
-                      );
-                    },
-                    child: Container(
-                      width: 120,
-                      margin: const EdgeInsets.only(right: 16),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: HuashuTheme.stainedCinnabarRed.withValues(alpha: 0.3)),
-                        color: HuashuTheme.xuanPaperBg,
+                  final catMap = _categories[index];
+                  final catName = catMap['name']?.toString() ?? 'Semua';
+                  final isSelected = _selectedCategory == catName || (_selectedCategory == null && catName == 'Semua');
+                  return Padding(
+                    padding: const EdgeInsets.only(right: HuashuTheme.space12),
+                    child: ChoiceChip(
+                      label: Text(
+                        catName,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          letterSpacing: 0.5,
+                          color: isSelected ? HuashuTheme.xuanPaperBg : HuashuTheme.charcoalBlack,
+                        ),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: CachedNetworkImage(
-                              imageUrl: ApiService.sanitizeImageUrl(product['image_url']),
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                              errorWidget: (context, url, error) => const Icon(Icons.image_not_supported),
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  product['name'] ?? '',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  ApiService.formatPrice(price),
-                                  style: GoogleFonts.inter(fontSize: 10, color: Colors.grey, decoration: TextDecoration.lineThrough),
-                                ),
-                                Text(
-                                  ApiService.formatPrice(discountPrice),
-                                  style: GoogleFonts.notoSerifSc(fontSize: 12, color: HuashuTheme.stainedCinnabarRed, fontWeight: FontWeight.bold),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+                      selected: isSelected,
+                      onSelected: (_) {
+                        setState(() => _selectedCategory = catName);
+                        _fetchProducts();
+                      },
                     ),
                   );
                 },
               ),
             ),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: HuashuTheme.space24, vertical: 8),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: HuashuTheme.space12)),
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: HuashuTheme.space24),
               child: InkBrushDivider(height: 1.5),
+            ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: HuashuTheme.space12)),
+          
+          // ─── Banners ──────────────────────────────────
+          if (_banners.where((b) => (b['image_url'] ?? '').toString().isNotEmpty).isNotEmpty && (_searchQuery.isEmpty && (_selectedCategory == null || _selectedCategory == 'Semua'))) ...[
+            SliverToBoxAdapter(
+              child: Builder(builder: (context) {
+                final validBanners = _banners.where((b) => (b['image_url'] ?? '').toString().isNotEmpty).toList();
+                return SizedBox(
+                  height: 160,
+                  child: PageView.builder(
+                    controller: PageController(viewportFraction: 0.9),
+                    itemCount: validBanners.length,
+                    itemBuilder: (context, index) {
+                      final banner = validBanners[index];
+                      final imageUrl = ApiService.sanitizeImageUrl(banner['image_url']?.toString());
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(color: HuashuTheme.lightInkLine),
+                          ),
+                          child: ClipRect(
+                            child: imageUrl.isNotEmpty
+                                ? CachedNetworkImage(
+                                    imageUrl: imageUrl,
+                                    fit: BoxFit.cover,
+                                    width: double.infinity,
+                                    height: double.infinity,
+                                    errorWidget: (_, __, ___) => const Center(
+                                      child: Icon(Icons.broken_image_outlined, color: HuashuTheme.warmStone, size: 40),
+                                    ),
+                                  )
+                                : const SizedBox.shrink(),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                );
+              }),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: HuashuTheme.space12)),
+          ],
+          
+          if (_flashSales.isNotEmpty && (_searchQuery.isEmpty && (_selectedCategory == null || _selectedCategory == 'Semua'))) ...[
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: HuashuTheme.space24, vertical: HuashuTheme.space12),
+                child: Row(
+                  children: [
+                    const Icon(Icons.flash_on, color: HuashuTheme.stainedCinnabarRed),
+                    const SizedBox(width: 8),
+                    Text(
+                      'FLASH SALE BERAKHIR DALAM 02:45:10',
+                      style: GoogleFonts.notoSerifSc(fontWeight: FontWeight.bold, color: HuashuTheme.stainedCinnabarRed, fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: 160,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: HuashuTheme.space24),
+                  itemCount: _flashSales.length,
+                  itemBuilder: (context, index) {
+                    final sale = _flashSales[index];
+                    final product = sale['Product'] ?? sale;
+                    final price = ApiService.parsePrice(product['price']);
+                    final discountPrice = sale['discount_price'] != null ? ApiService.parsePrice(sale['discount_price']) : price * 0.8;
+                    
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => ProductDetailScreen(product: product, priceDouble: discountPrice)),
+                        );
+                      },
+                      child: Container(
+                        width: 120,
+                        margin: const EdgeInsets.only(right: 16),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: HuashuTheme.stainedCinnabarRed.withValues(alpha: 0.3)),
+                          color: HuashuTheme.xuanPaperBg,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: CachedNetworkImage(
+                                imageUrl: ApiService.sanitizeImageUrl(product['image_url']),
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                errorWidget: (context, url, error) => const Icon(Icons.image_not_supported),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    product['name'] ?? '',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    ApiService.formatPrice(price),
+                                    style: GoogleFonts.inter(fontSize: 10, color: Colors.grey, decoration: TextDecoration.lineThrough),
+                                  ),
+                                  Text(
+                                    ApiService.formatPrice(discountPrice),
+                                    style: GoogleFonts.notoSerifSc(fontSize: 12, color: HuashuTheme.stainedCinnabarRed, fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+            const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: HuashuTheme.space24, vertical: 8),
+                child: InkBrushDivider(height: 1.5),
+              ),
             ),
           ],
 
           // ─── Grid Produk ──────────────────────────────
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _errorMessage != null
-                    ? HuashuEmptyState(
-                        icon: Icons.cloud_off,
-                        message: _errorMessage!,
-                        onRetry: _fetchProducts,
-                      )
-                    : filtered.isEmpty
-                        ? const HuashuEmptyState(
-                            icon: Icons.search_off,
-                            message: 'Tidak ada produk yang cocok\ndengan pencarian Anda.',
-                          )
-                        : RefreshIndicator(
-                            color: HuashuTheme.mineralJadeGreen,
-                            onRefresh: _fetchProducts,
-                            child: GridView.builder(
-                              padding: const EdgeInsets.all(HuashuTheme.space24),
-                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                crossAxisSpacing: 16,
-                                mainAxisSpacing: 20,
-                                childAspectRatio: 0.68,
-                              ),
-                              itemCount: filtered.length,
-                              itemBuilder: (context, index) => _buildProductCard(filtered[index]),
-                            ),
-                          ),
-          ),
+          if (_isLoading)
+            const SliverFillRemaining(
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (_errorMessage != null)
+            SliverFillRemaining(
+              child: HuashuEmptyState(
+                icon: Icons.cloud_off,
+                message: _errorMessage!,
+                onRetry: _fetchProducts,
+              ),
+            )
+          else if (filtered.isEmpty)
+            const SliverFillRemaining(
+              child: HuashuEmptyState(
+                icon: Icons.search_off,
+                message: 'Tidak ada produk yang cocok\ndengan pencarian Anda.',
+              ),
+            )
+          else
+            SliverPadding(
+              padding: const EdgeInsets.all(HuashuTheme.space24),
+              sliver: SliverGrid(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 20,
+                  childAspectRatio: 0.68,
+                ),
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) => _buildProductCard(filtered[index]),
+                  childCount: filtered.length,
+                ),
+              ),
+            ),
         ],
       ),
     );

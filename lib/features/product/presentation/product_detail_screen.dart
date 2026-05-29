@@ -33,6 +33,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   List<dynamic> _reviews = [];
   bool _isLoadingReviews = true;
   String? _currentUserId;
+  bool _hasPurchased = false;
 
   @override
   void initState() {
@@ -41,6 +42,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     _fetchProductDetail();
     _fetchReviews();
     _loadUser();
+    _checkIfPurchased();
   }
 
   Future<void> _fetchProductDetail() async {
@@ -76,6 +78,31 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       debugPrint("Gagal fetch reviews: $e");
     } finally {
       if (mounted) setState(() => _isLoadingReviews = false);
+    }
+  }
+
+  Future<void> _checkIfPurchased() async {
+    try {
+      final response = await _api.dio.get('/api/orders');
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        final orders = response.data['data'] as List<dynamic>? ?? [];
+        final productId = _product['id'];
+        for (final order in orders) {
+          final status = order['status']?.toString().toLowerCase() ?? '';
+          // Hanya yang sudah delivered/completed yang boleh review
+          if (status == 'delivered' || status == 'completed') {
+            final items = order['items'] as List<dynamic>? ?? order['OrderItems'] as List<dynamic>? ?? [];
+            for (final item in items) {
+              if (item['product_id'] == productId || item['productId'] == productId) {
+                if (mounted) setState(() => _hasPurchased = true);
+                return;
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint("Gagal cek purchase: $e");
     }
   }
 
@@ -457,10 +484,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const HuashuSectionLabel(text: 'Ulasan Pembeli'),
-                      TextButton(
-                        onPressed: _showAddReviewDialog,
-                        child: const Text('Tulis Ulasan', style: TextStyle(color: HuashuTheme.mineralJadeGreen)),
-                      )
+                      if (_hasPurchased)
+                        TextButton(
+                          onPressed: _showAddReviewDialog,
+                          child: const Text('Tulis Ulasan', style: TextStyle(color: HuashuTheme.mineralJadeGreen)),
+                        )
                     ],
                   ),
                   const SizedBox(height: 12),
