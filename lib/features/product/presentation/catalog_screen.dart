@@ -446,11 +446,6 @@ class _CatalogScreenState extends State<CatalogScreen> {
               );
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.logout, size: 20),
-            tooltip: 'Keluar',
-            onPressed: _logout,
-          ),
           const SizedBox(width: HuashuTheme.space8),
         ],
       ),
