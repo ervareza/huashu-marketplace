@@ -5,6 +5,7 @@ import 'features/auth/presentation/login_screen.dart';
 import 'features/product/presentation/catalog_screen.dart';
 import 'core/network/global_socket_service.dart';
 import 'core/network/api_service.dart';
+import 'core/network/auth_helper.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,6 +18,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: globalNavigatorKey,
       title: 'Marketplace Huashu',
       theme: HuashuTheme.lightTheme,
       debugShowCheckedModeBanner: false,

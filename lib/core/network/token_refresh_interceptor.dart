@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'auth_helper.dart';
 
 class TokenRefreshInterceptor extends QueuedInterceptorsWrapper {
   final Dio dioClient;
@@ -65,11 +66,8 @@ class TokenRefreshInterceptor extends QueuedInterceptorsWrapper {
           }
         }
       } catch (refreshError) {
-        // Refresh gagal — hapus semua token
-        await _secureStorage.delete(key: 'access_token');
-        await _secureStorage.delete(key: 'refresh_token');
-        await _secureStorage.delete(key: 'user_name');
-        await _secureStorage.delete(key: 'user_role');
+        // Refresh gagal — hapus semua token dan paksa logout
+        await AuthHelper.forceLogoutAndRedirect('Sesi kedaluwarsa, silakan login kembali.');
       }
     }
     return handler.next(err);

@@ -17,6 +17,7 @@ import '../../order/presentation/order_history_screen.dart';
 import '../../auth/presentation/login_screen.dart';
 import '../../seller/presentation/seller_dashboard_screen.dart';
 import '../../../core/network/global_socket_service.dart';
+import '../../../core/network/auth_helper.dart';
 
 class CatalogScreen extends StatefulWidget {
   const CatalogScreen({super.key});
@@ -199,15 +200,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
     );
 
     if (confirm == true) {
-      await _api.secureStorage.deleteAll();
-      CartProvider().clearLocal();
-      GlobalSocketService().disposeSocket();
-      if (mounted) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
-          (route) => false,
-        );
-      }
+      await AuthHelper.forceLogoutAndRedirect('Anda telah keluar.');
     }
   }
 
@@ -398,17 +391,10 @@ class _CatalogScreenState extends State<CatalogScreen> {
                     },
                   ),
                   if (_hasUnreadNotif || GlobalSocketService().hasUnreadNotifications)
-                    Positioned(
-                      right: 12,
-                      top: 12,
-                      child: Container(
-                        width: 10,
-                        height: 10,
-                        decoration: const BoxDecoration(
-                          color: HuashuTheme.stainedCinnabarRed,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
+                    const Positioned(
+                      right: 6,
+                      top: 6,
+                      child: HuashuStampBadge(label: 'New', color: HuashuTheme.stainedCinnabarRed),
                     ),
                 ],
               );
@@ -518,37 +504,41 @@ class _CatalogScreenState extends State<CatalogScreen> {
           
           // ─── Banners ──────────────────────────────────
           if (_banners.where((b) => (b['image_url'] ?? '').toString().isNotEmpty).isNotEmpty && (_searchQuery.isEmpty && (_selectedCategory == null || _selectedCategory == 'Semua'))) ...[
-            SizedBox(
-              height: 140,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: HuashuTheme.space24),
-                itemCount: _banners.where((b) => (b['image_url'] ?? '').toString().isNotEmpty).length,
-                itemBuilder: (context, index) {
-                  final validBanners = _banners.where((b) => (b['image_url'] ?? '').toString().isNotEmpty).toList();
-                  final banner = validBanners[index];
-                  final imageUrl = ApiService.sanitizeImageUrl(banner['image_url']?.toString());
-                  return Container(
-                    width: 280,
-                    margin: const EdgeInsets.only(right: 16),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: HuashuTheme.lightInkLine),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: imageUrl.isNotEmpty
-                          ? CachedNetworkImage(
-                              imageUrl: imageUrl,
-                              fit: BoxFit.cover,
-                              errorWidget: (_, __, ___) => const SizedBox.shrink(),
-                            )
-                          : const SizedBox.shrink(),
-                    ),
-                  );
-                },
-              ),
-            ),
+            Builder(builder: (context) {
+              final validBanners = _banners.where((b) => (b['image_url'] ?? '').toString().isNotEmpty).toList();
+              return SizedBox(
+                height: 160,
+                child: PageView.builder(
+                  controller: PageController(viewportFraction: 0.9),
+                  itemCount: validBanners.length,
+                  itemBuilder: (context, index) {
+                    final banner = validBanners[index];
+                    final imageUrl = ApiService.sanitizeImageUrl(banner['image_url']?.toString());
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: HuashuTheme.lightInkLine),
+                        ),
+                        child: ClipRect(
+                          child: imageUrl.isNotEmpty
+                              ? CachedNetworkImage(
+                                  imageUrl: imageUrl,
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                  errorWidget: (_, __, ___) => const Center(
+                                    child: Icon(Icons.broken_image_outlined, color: HuashuTheme.warmStone, size: 40),
+                                  ),
+                                )
+                              : const SizedBox.shrink(),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              );
+            }),
             const SizedBox(height: HuashuTheme.space12),
           ],
           
