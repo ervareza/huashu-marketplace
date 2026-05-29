@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-05-29
+
+### Added
+- **API Coverage 100%**: Menyelesaikan implementasi seluruh endpoint dari `API_DOCUMENTATION (1).md` pada sisi client.
+- **Batalkan Pesanan**: Penambahan tombol `Batalkan Pesanan` di halaman `OrderDetailScreen` (hanya jika pesanan masih pending).
+- **Hapus Akun Pengguna**: Fitur hapus akun secara permanen di dalam halaman `ProfileScreen` dengan konfirmasi popup.
+- **Manajemen Alamat**: Fitur *Edit Alamat* dan *Hapus Alamat* di halaman `AddressScreen` terhubung ke backend.
+- **Realtime Product Detail**: Refactor halaman `ProductDetailScreen` agar selalu mengambil data produk terbaru menggunakan API `GET /api/products/:id` alih-alih mengandalkan cache route.
+
 ## [1.5.0] - 2026-05-29
 
 ### Added

@@ -28,6 +28,7 @@ class ProductDetailScreen extends StatefulWidget {
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   final ApiService _api = ApiService();
   int _quantity = 1;
+  late Map<String, dynamic> _product;
 
   List<dynamic> _reviews = [];
   bool _isLoadingReviews = true;
@@ -36,8 +37,25 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   @override
   void initState() {
     super.initState();
+    _product = widget.product is Map<String, dynamic> ? widget.product as Map<String, dynamic> : Map<String, dynamic>.from(widget.product);
+    _fetchProductDetail();
     _fetchReviews();
     _loadUser();
+  }
+
+  Future<void> _fetchProductDetail() async {
+    try {
+      final response = await _api.dio.get('/api/products/${_product['id']}');
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        if (mounted) {
+          setState(() {
+            _product = response.data['data'];
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("Gagal fetch product detail: $e");
+    }
   }
 
   Future<void> _loadUser() async {
@@ -48,7 +66,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   Future<void> _fetchReviews() async {
     setState(() => _isLoadingReviews = true);
     try {
-      final response = await _api.dio.get('/api/products/${widget.product['id']}/reviews');
+      final response = await _api.dio.get('/api/products/${_product['id']}/reviews');
       if (response.statusCode == 200 && response.data['success'] == true) {
         setState(() {
           _reviews = response.data['data'] ?? [];
@@ -62,11 +80,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   void _addToCart() async {
-    final success = await CartProvider().addToCart(widget.product['id'], _quantity);
+    final success = await CartProvider().addToCart(_product['id'], _quantity);
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('${widget.product['name']} ditambahkan ke keranjang'),
+          content: Text('${_product['name']} ditambahkan ke keranjang'),
           backgroundColor: HuashuTheme.mineralJadeGreen,
         ),
       );
@@ -205,7 +223,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       }
 
       FormData formData = FormData.fromMap(dataMap);
-      final response = await _api.dio.post('/api/products/${widget.product['id']}/reviews', data: formData);
+      final response = await _api.dio.post('/api/products/${_product['id']}/reviews', data: formData);
 
       if (response.statusCode == 201) {
         if (mounted) {
@@ -262,7 +280,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   Future<void> _submitReply(int reviewId, String replyText) async {
     try {
       final response = await _api.dio.post(
-        '/api/products/${widget.product['id']}/reviews/$reviewId/reply',
+        '/api/products/${_product['id']}/reviews/$reviewId/reply',
         data: {'reply': replyText},
       );
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -293,7 +311,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final p = widget.product;
+    final p = _product;
 
     return Scaffold(
       appBar: AppBar(),
@@ -521,7 +539,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                     ],
                                   ),
                                 ),
-                              ] else if (_currentUserId != null && widget.product['seller_id'] != null && _currentUserId == widget.product['seller_id'].toString()) ...[
+                              ] else if (_currentUserId != null && _product['seller_id'] != null && _currentUserId == _product['seller_id'].toString()) ...[
                                 const SizedBox(height: 8),
                                 Align(
                                   alignment: Alignment.centerRight,

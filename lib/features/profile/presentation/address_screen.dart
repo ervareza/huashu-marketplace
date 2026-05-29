@@ -158,31 +158,196 @@ class _AddressScreenState extends State<AddressScreen> {
                               });
 
                               if (response.statusCode == 201) {
-                                if (ctx.mounted) Navigator.pop(ctx);
-                                _fetchAddresses();
+                                  if (ctx.mounted) Navigator.pop(ctx);
+                                  _fetchAddresses();
+                                }
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Gagal menambah alamat')),
+                                  );
+                                }
                               }
-                            } catch (e) {
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Gagal menambah alamat')),
-                                );
-                              }
-                            }
-                          },
-                          child: const Text('SIMPAN ALAMAT'),
+                            },
+                            child: const Text('SIMPAN ALAMAT'),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 24),
-                    ],
+                        const SizedBox(height: 24),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
+              );
+            },
+          );
+        },
+      );
+    }
+
+    Future<void> _deleteAddress(int id) async {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text('HAPUS ALAMAT', style: GoogleFonts.notoSerifSc(fontWeight: FontWeight.bold, color: HuashuTheme.stainedCinnabarRed)),
+          content: const Text('Apakah Anda yakin ingin menghapus alamat ini?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('BATAL', style: TextStyle(color: HuashuTheme.charcoalBlack)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('HAPUS', style: TextStyle(color: HuashuTheme.stainedCinnabarRed)),
+            ),
+          ],
+        ),
+      );
+
+      if (confirm == true) {
+        setState(() => _isLoading = true);
+        try {
+          final response = await _api.dio.delete('/api/users/addresses/$id');
+          if (response.statusCode == 200) {
+            _fetchAddresses();
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Alamat berhasil dihapus')));
+            }
+          }
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Gagal menghapus alamat')));
+            setState(() => _isLoading = false);
+          }
+        }
+      }
+    }
+
+    void _showEditAddressDialog(Map<String, dynamic> addr) {
+      final formKey = GlobalKey<FormState>();
+      final recipientCtrl = TextEditingController(text: addr['recipient']?.toString() ?? '');
+      final phoneCtrl = TextEditingController(text: addr['phone']?.toString() ?? '');
+      final labelCtrl = TextEditingController(text: addr['label']?.toString() ?? '');
+      final addressCtrl = TextEditingController(text: addr['address']?.toString() ?? '');
+      final cityCtrl = TextEditingController(text: addr['city']?.toString() ?? '');
+      final provinceCtrl = TextEditingController(text: addr['province']?.toString() ?? '');
+      final postalCtrl = TextEditingController(text: addr['postal_code']?.toString() ?? '');
+
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: HuashuTheme.xuanPaperBg,
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+        builder: (ctx) {
+          return StatefulBuilder(
+            builder: (context, setModalState) {
+              return Padding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(ctx).viewInsets.bottom,
+                  left: 24,
+                  right: 24,
+                  top: 24,
+                ),
+                child: Form(
+                  key: formKey,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Edit Alamat', style: GoogleFonts.notoSerifSc(fontSize: 20, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: labelCtrl,
+                          decoration: const InputDecoration(labelText: 'Label (Kantor/Rumah)'),
+                          validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
+                        ),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: recipientCtrl,
+                          decoration: const InputDecoration(labelText: 'Nama Penerima'),
+                          validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
+                        ),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: phoneCtrl,
+                          decoration: const InputDecoration(labelText: 'Nomor HP'),
+                          keyboardType: TextInputType.phone,
+                          validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
+                        ),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: provinceCtrl,
+                          decoration: const InputDecoration(labelText: 'Provinsi'),
+                          validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
+                        ),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: cityCtrl,
+                          decoration: const InputDecoration(labelText: 'Kota'),
+                          validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
+                        ),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: postalCtrl,
+                          decoration: const InputDecoration(labelText: 'Kode Pos'),
+                          keyboardType: TextInputType.number,
+                          validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
+                        ),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: addressCtrl,
+                          decoration: const InputDecoration(labelText: 'Jalan & Detail Alamat'),
+                          maxLines: 2,
+                          validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
+                        ),
+                        const SizedBox(height: 24),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: HuashuTheme.mineralJadeGreen,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                            ),
+                            onPressed: () async {
+                              if (!formKey.currentState!.validate()) return;
+                              
+                              try {
+                                final response = await _api.dio.put('/api/users/addresses/${addr['id']}', data: {
+                                  'label': labelCtrl.text,
+                                  'recipient': recipientCtrl.text,
+                                  'phone': phoneCtrl.text,
+                                  'address': addressCtrl.text,
+                                  'city': cityCtrl.text,
+                                  'province': provinceCtrl.text,
+                                  'postal_code': postalCtrl.text,
+                                });
+
+                                if (response.statusCode == 200) {
+                                  if (ctx.mounted) Navigator.pop(ctx);
+                                  _fetchAddresses();
+                                }
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Gagal mengubah alamat')),
+                                  );
+                                }
+                              }
+                            },
+                            child: const Text('SIMPAN PERUBAHAN'),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      );
+    }
 
   @override
   Widget build(BuildContext context) {
@@ -255,11 +420,35 @@ class _AddressScreenState extends State<AddressScreen> {
                                     ]
                                   ],
                                 ),
-                                if (!isDefault)
-                                  TextButton(
-                                    onPressed: () => _setDefaultAddress(addr['id']),
-                                    child: const Text('Jadikan Utama', style: TextStyle(color: HuashuTheme.mineralJadeGreen)),
-                                  )
+                                Row(
+                                  children: [
+                                    if (!isDefault)
+                                      TextButton(
+                                        onPressed: () => _setDefaultAddress(addr['id']),
+                                        child: const Text('Jadikan Utama', style: TextStyle(color: HuashuTheme.mineralJadeGreen, fontSize: 12)),
+                                      ),
+                                    PopupMenuButton<String>(
+                                      icon: const Icon(Icons.more_vert, size: 20),
+                                      onSelected: (val) {
+                                        if (val == 'edit') {
+                                          _showEditAddressDialog(addr);
+                                        } else if (val == 'delete') {
+                                          _deleteAddress(addr['id']);
+                                        }
+                                      },
+                                      itemBuilder: (ctx) => [
+                                        const PopupMenuItem(
+                                          value: 'edit',
+                                          child: Text('Edit'),
+                                        ),
+                                        const PopupMenuItem(
+                                          value: 'delete',
+                                          child: Text('Hapus', style: TextStyle(color: HuashuTheme.stainedCinnabarRed)),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ],
                             ),
                             const SizedBox(height: 8),

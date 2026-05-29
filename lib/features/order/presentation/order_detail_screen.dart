@@ -145,6 +145,49 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     }
   }
 
+  Future<void> _cancelOrder() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('BATALKAN PESANAN', style: GoogleFonts.notoSerifSc(fontWeight: FontWeight.bold, color: HuashuTheme.stainedCinnabarRed)),
+        content: const Text('Apakah Anda yakin ingin membatalkan pesanan ini?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('TIDAK', style: TextStyle(color: HuashuTheme.charcoalBlack)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('YA, BATALKAN', style: TextStyle(color: HuashuTheme.stainedCinnabarRed)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      setState(() => _isLoading = true);
+      try {
+        final response = await _api.dio.put('/api/orders/${widget.orderId}/cancel');
+        if (response.statusCode == 200) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pesanan berhasil dibatalkan.')));
+            _fetchOrderDetail();
+          }
+        }
+      } on DioException catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ApiService.extractErrorMessage(e))));
+          setState(() => _isLoading = false);
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Gagal membatalkan pesanan')));
+          setState(() => _isLoading = false);
+        }
+      }
+    }
+  }
+
   void _showDisputeDialog() {
     final reasonCtrl = TextEditingController();
     final descCtrl = TextEditingController();
@@ -383,6 +426,20 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 child: const Text('BAYAR SEKARANG'),
               ),
             ),
+            if (orderStatus == 'pending') ...[
+              const SizedBox(height: HuashuTheme.space8),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: HuashuTheme.stainedCinnabarRed,
+                    side: const BorderSide(color: HuashuTheme.stainedCinnabarRed),
+                  ),
+                  onPressed: _cancelOrder,
+                  child: const Text('BATALKAN PESANAN'),
+                ),
+              ),
+            ],
           ],
           const SizedBox(height: HuashuTheme.space24),
 

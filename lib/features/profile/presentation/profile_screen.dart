@@ -193,6 +193,48 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _deleteAccount() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('HAPUS AKUN', style: GoogleFonts.notoSerifSc(fontWeight: FontWeight.bold, color: HuashuTheme.stainedCinnabarRed)),
+        content: const Text('Apakah Anda yakin ingin menghapus akun secara permanen? Semua data akan hilang dan tidak dapat dikembalikan.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('BATAL', style: TextStyle(color: HuashuTheme.charcoalBlack)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('HAPUS PERMANEN', style: TextStyle(color: HuashuTheme.stainedCinnabarRed)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      setState(() => _isLoading = true);
+      try {
+        final response = await _api.dio.delete('/api/users/profile');
+        if (response.statusCode == 200) {
+          await _api.secureStorage.deleteAll();
+          if (mounted) {
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (_) => const LoginScreen()),
+              (route) => false,
+            );
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Akun berhasil dihapus')));
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ApiService.extractErrorMessage(e as DioException))));
+          setState(() => _isLoading = false);
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -314,9 +356,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       },
                     ),
                     ListTile(
-                      leading: const Icon(Icons.logout, color: HuashuTheme.stainedCinnabarRed),
-                      title: Text('Keluar', style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: HuashuTheme.stainedCinnabarRed)),
+                      leading: const Icon(Icons.logout, color: HuashuTheme.charcoalBlack),
+                      title: Text('Keluar', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
                       onTap: _logout,
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.delete_forever, color: HuashuTheme.stainedCinnabarRed),
+                      title: Text('Hapus Akun', style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: HuashuTheme.stainedCinnabarRed)),
+                      subtitle: Text('Hapus akun secara permanen', style: GoogleFonts.inter(fontSize: 12, color: HuashuTheme.stainedCinnabarRed.withValues(alpha: 0.8))),
+                      onTap: _deleteAccount,
                     ),
                   ],
                 ),
