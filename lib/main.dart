@@ -4,6 +4,7 @@ import 'core/theme/huashu_theme.dart';
 import 'features/auth/presentation/login_screen.dart';
 import 'features/product/presentation/catalog_screen.dart';
 import 'core/network/global_socket_service.dart';
+import 'core/network/api_service.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,13 +45,28 @@ class _SessionCheckScreenState extends State<SessionCheckScreen> {
 
   Future<void> _checkSession() async {
     final token = await _secureStorage.read(key: 'access_token');
+    bool validSession = false;
+
     if (token != null) {
-      await GlobalSocketService().initSocket();
+      try {
+        final api = ApiService();
+        final response = await api.dio.get('/api/auth/verify-token');
+        if (response.statusCode == 200 && response.data['success'] == true) {
+          validSession = true;
+          await GlobalSocketService().initSocket();
+        }
+      } catch (e) {
+        validSession = false;
+        await _secureStorage.deleteAll(); // Hapus token tidak valid
+      }
     }
-    setState(() {
-      _hasSession = token != null;
-      _checking = false;
-    });
+    
+    if (mounted) {
+      setState(() {
+        _hasSession = validSession;
+        _checking = false;
+      });
+    }
   }
 
   @override
