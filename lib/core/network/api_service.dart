@@ -9,10 +9,10 @@ import 'token_refresh_interceptor.dart';
 /// - Timeout & error handling konsisten
 class ApiService {
   // ═══════════════════════════════════════════════════
-  // GANTI URL INI JIKA TEMAN ANDA RESTART NGROK
+  // BASE URL API
   // ═══════════════════════════════════════════════════
   static const String baseUrl =
-      'https://tetra-legal-regularly.ngrok-free.app';
+      'https://api-huashu-marketplace-e147ebd9bffa.herokuapp.com';
 
   static final ApiService _instance = ApiService._internal();
   factory ApiService() => _instance;
@@ -126,8 +126,8 @@ class ApiService {
       return '$baseUrl$path';
     }
     
-    // Pastikan HTTPS jika ngrok
-    if (url.contains('ngrok-free.app') && url.startsWith('http://')) {
+    // Pastikan HTTPS jika herokuapp
+    if (url.contains('herokuapp.com') && url.startsWith('http://')) {
       return url.replaceFirst('http://', 'https://');
     }
     
