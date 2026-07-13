@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.0] - 2026-07-13
+
+### Added
+- **Spesifikasi Poster Huashu Marketplace**: Membuat rancangan konten poster presentasi teknis ([poster_1_huashu_marketplace.md](file:///d:/CODE/FLUTTER-JEFRY/poster_1_huashu_marketplace.md) & [poster_2_huashu_marketplace.md](file:///d:/CODE/FLUTTER-JEFRY/poster_2_huashu_marketplace.md)) yang menjelaskan tentang visual *Huashu Style*, penyelesaian *visual fatigue*, arsitektur *Clean Architecture* Flutter, token JWT lifecycle, integrasi *WebView Midtrans*, serta kepatuhan *Data Safety*.
+
 ## [1.8.3] - 2026-07-13
 
 ### Added
