@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.2] - 2026-07-13
+
+### Added
+- **Halaman Deletion Request** (`delete-account.html`): Membuat halaman web statis yang memuat langkah-langkah permintaan penghapusan akun dan data pengguna (sesuai regulasi Google Play Store Data Safety). Halaman ini menyertakan tipe data yang dihapus serta kebijakan retensi data keuangan (5 tahun).
+
 ## [1.8.1] - 2026-06-10
 
 ### Changed
