@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.3] - 2026-07-13
+
+### Added
+- **Closed Testing Release**: Menyiapkan dan meluncurkan track pengujian tertutup Alpha di Google Play Console dengan bundle `app-release.aab` versi `1.3.0+6`.
+- **Deklarasi Iklan & Play Store Checklist**: Menyelesaikan seluruh checklist penyiapan aplikasi termasuk deklarasi ID Iklan (Advertising ID) sebagai tidak menggunakan iklan, aplikasi pemerintah, fitur keuangan, dan kesehatan.
+- **Penyelesaian Keamanan Data**: Mengisi kuesioner Keamanan Data (Data Safety) untuk 6 tipe data (Nama, Email, Histori Pembelian, Pesan, Foto, Perangkat/ID Lainnya) dan mengirimkan 14 perubahan draf untuk ditinjau oleh Google.
+
 ## [1.8.2] - 2026-07-13
 
 ### Added
