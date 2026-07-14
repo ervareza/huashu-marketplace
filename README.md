@@ -20,6 +20,16 @@ Aplikasi ini dibangun menggunakan **Flutter** untuk antarmuka lintas platform (A
 
 ---
 
+## 🖼️ Poster & Infografis
+
+<p align="center">
+  <img src="docs/images/poster_appbenefits_huashu_marketplace.jpg" alt="Manfaat & Nilai Unggul Huashu Marketplace" width="48%">
+  &nbsp;
+  <img src="docs/images/poster_workflow_huashu_marketplace.jpg" alt="Alur Mekanisme & Cara Kerja Huashu Marketplace" width="48%">
+</p>
+
+---
+
 ## ✨ Fitur Utama
 
 ### 🛍️ Untuk Pembeli
