@@ -1,69 +1,50 @@
-# DESAIN POSTER 1: Problem, Target User, & Kesesuaian Fitur
+# DESAIN POSTER 1: Cara Kerja Aplikasi (System Flow & Mechanics)
 
 **Catatan untuk Desainer (Fathur Rohman):**
-*Gunakan ukuran kanvas/kertas **A3 (29.7 x 42 cm)**. Desain poster ini difokuskan untuk memenuhi kriteria penilaian (Kejelasan Problem, Target User, Scope, dan Kesesuaian Fitur). Gunakan gaya desain tradisional minimalis yang elegan (Gaya Lukisan Cat Air / Xuan Paper, dengan kombinasi warna tenang abu-abu arang dan off-white). Semua teks di bawah ini dapat di-copy-paste langsung ke teks box di Canva/Figma.*
+*Gunakan ukuran kanvas/kertas **A3 (29.7 x 42 cm)**. Desain poster ini difokuskan untuk menjelaskan **Cara Kerja Aplikasi** secara teknis dan runtut. Bagian tengah berisi diagram alir (flowchart) interaktif. Gunakan gaya desain visual yang bersih dengan latar belakang Xuan Paper (off-white) dan ornamen tinta arang khas Huashu. Semua teks di bawah ini dapat di-copy-paste langsung ke teks box di Canva/Figma.*
 
 ---
 
 ## [Bagian Header]
-**Judul Besar:** Huashu Marketplace: E-Commerce Berestetika Lukisan Cat Air
-**Sub-judul:** Ketenangan Kesenian Tradisional Tiongkok Dikombinasikan dengan Pembayaran FinTech Modern
-**Oleh:** Ervareza Naurian, Adrianus Bagus, Fathur Rohman
+**Judul Besar:** Alur Mekanisme & Cara Kerja Huashu Marketplace
+**Sub-judul:** Panduan Teknis Arsitektur Alur Transaksi, Otentikasi JWT, dan Manajemen Inventori Seller
+**Oleh:** Ervareza Naurian (24.01.53.0018), Adrianus Bagus (24.01.53.0033)
 
 ---
 
-## [Bagian Tengah - Elemen Visual Utama: Problem vs Solution]
-*(Buat/gambar ulang diagram perbandingan ini dengan ilustrasi yang menarik di Canva/Figma)*
+## [Bagian Tengah - Elemen Visual Utama: Diagram Alur Cara Kerja]
+*(Gambarkan kembali diagram alur sistem ini secara visual dengan ikon-ikon yang menarik di Canva/Figma)*
 
 ```mermaid
-graph LR
-    classDef bad fill:#ef4444,stroke:#fff,stroke-width:2px,color:#fff;
-    classDef good fill:#4b5563,stroke:#fff,stroke-width:2px,color:#fff;
+graph TD
+    classDef step fill:#f3f4f6,stroke:#374151,stroke-width:2px,color:#1f2937;
+    classDef key fill:#1f2937,stroke:#111827,stroke-width:2px,color:#fff;
 
-    subgraph Tradisional ["E-Commerce Modern (Problem)"]
-        P1[Visual Fatigue & Neon Gradients]:::bad --> P2[Checkout Dialihkan ke Browser Luar]:::bad --> P3[Pemisahan Role Akun yang Rumit]:::bad
-    end
-
-    subgraph Huashu ["Huashu Marketplace (Solusi)"]
-        S1[Estetika Tinta & Xuan Paper]:::good --> S2[Midtrans Snap WebView Seamless]:::good --> S3[Dual-Role Unified Interface]:::good
-    end
+    A[1. Registrasi & Login JWT]:::step --> B[2. Telusuri Katalog Produk]:::step
+    B --> C[3. Klik Beli & Request Token Snap]:::step
+    C --> D[4. Internal WebView Snap Midtrans]:::step
+    D --> E[5. Bayar & Webhook Sync]:::key
+    E --> F[6. State Update BLoC: Sukses / Gagal]:::step
+    
+    G[Seller Panel CRUD]:::step <--> H[API Database & Storage]:::key
+    B <--> H
 ```
 
 ---
 
-## [Bagian Kiri - Kejelasan Problem, Target User & Scope]
+## [Bagian Kiri - Manajemen Sesi & Autentikasi (JWT Flow)]
 
-### Target Pengguna (User Persona)
-Platform ini dibangun secara khusus untuk memberdayakan:
-1. **Pecinta Seni & Kolektor Barang Unik (Customer)**
-   Pengguna yang menghargai estetika visual tenang, minimalis, dan produk kerajinan bernilai seni tinggi.
-2. **Pengrajin Tradisional & UMKM Seni (Seller)**
-   Produsen lokal yang membutuhkan media katalog bernilai estetika tinggi untuk menjangkau pembeli premium.
-
-### Latar Belakang Masalah (Pain Points)
-- **Kelelahan Visual (Visual Fatigue):** Mayoritas marketplace dipenuhi warna neon agresif, bayangan tebal, iklan popup, dan desain AI tanpa karakter.
-- **Alur Pembayaran Terputus:** Pengguna sering dialihkan ke browser eksternal saat checkout, sehingga rawan gagal bayar.
-- **Pemisahan Akun Rumit:** Pengguna harus membuat akun terpisah untuk menjadi pembeli dan penjual di dalam satu platform.
-
-### Batasan Sistem (Scope)
-Sistem ini merupakan aplikasi e-commerce mobile berbasis Flutter dengan ruang lingkup:
-- Modul autentikasi aman berbasis JWT (Token Lifecycle).
-- Manajemen katalog produk (CRUD Seller & Catalog View Customer).
-- Checkout instan menggunakan snap token Midtrans terintegrasi.
-- Halaman kepatuhan penghapusan data pengguna mandiri (Data Safety).
+### 1. Registrasi & Otorisasi Sesi Aman
+*   **Registrasi Satu Langkah:** Pengguna baru mendaftar langsung sebagai `customer` menggunakan email unik dan password terenkripsi.
+*   **Dual-Role Access Token:** Payload JWT (`access_token`) memuat informasi hak akses pengguna. Akun customer secara otomatis memiliki otoritas untuk membuka *Seller Panel* tanpa harus melakukan registrasi akun baru.
+*   **Silent Token Refresh:** Aplikasi mendeteksi masa aktif token (7 hari). Sebelum kadaluarsa, aplikasi secara otomatis meminta token baru ke server menggunakan `refresh_token` (30 hari) di latar belakang tanpa menginterupsi aktivitas belanja pengguna.
 
 ---
 
-## [Bagian Kanan - Kesesuaian Fitur dengan Problem]
+## [Bagian Kanan - Siklus Transaksi & Pembayaran FinTech]
 
-### Bagaimana Fitur Menyelesaikan Masalah?
-Fitur dalam Huashu Marketplace dirancang khusus untuk menjadi solusi langsung atas hambatan belanja online:
-
-**1. Desain Estetika Huashu (Water-Ink)**
-Mengatasi masalah *Visual Fatigue* dengan skema warna batu mineral tenang, garis pembatas tipis (0.5dp), dan tipografi serif klasik yang menyajikan ruang bernapas bagi mata pengguna.
-
-**2. Midtrans Snap WebView Seamless**
-Menyelesaikan isu checkout yang terputus. Kontainer webview disematkan secara internal dalam Flutter, mendeteksi status transaksi seketika, dan mengembalikan pengguna otomatis ke halaman konfirmasi setelah pembayaran berhasil.
-
-**3. Dual-Role Unified Interface**
-Menghilangkan kerumitan registrasi multi-akun. Melalui payload JWT, pembeli (`customer`) secara otomatis dapat mengakses menu pengelolaan produk penjual (*Seller Panel*) secara instan dalam satu akun terpadu.
+### 2. Alur Pembayaran Snap Midtrans & Sinkronisasi
+*   **Request Snap Token:** Saat pengguna mengklik "Beli Sekarang", Flutter mengirimkan order ID ke API backend untuk meminta Snap Token unik dari Midtrans.
+*   **Seamless WebView Integration:** Aplikasi membuka kontainer WebView internal yang memuat halaman pembayaran Midtrans Snap secara langsung di dalam aplikasi (tanpa membuka browser eksternal).
+*   **Asynchronous Webhook:** Setelah pengguna membayar via e-wallet atau bank transfer, server Midtrans mengirimkan notifikasi aman (*webhook*) langsung ke API backend. Status pembayaran pesanan di database lokal diperbarui secara real-time.
+*   **State Update (BLoC):** Status pembayaran ditangkap oleh state management BLoC di Flutter untuk memperbarui UI riwayat pesanan pengguna menjadi "Lunas" (Paid) atau "Batal" (Cancelled).
